@@ -1,0 +1,12 @@
+{% load static %}
+{% with fallback_image='CoursePlatform/images/courses/technology.jpg' %}
+<img src="{% static 'CoursePlatform/images/courses/'|add:image_file %}" 
+     alt="{{ course.title|default:'' }}" 
+     style="width: 100%; height: 100%; object-fit: cover;" 
+     loading="lazy"
+     data-fallback="{% static fallback_image %}"
+     data-bs-toggle="tooltip"
+     data-bs-placement="top"
+     title="{{ course.title|default:'' }}"
+     onerror="this.onerror=null; this.src=this.dataset.fallback">
+{% endwith %}

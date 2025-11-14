@@ -1,0 +1,1169 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title }} - Online Course Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+  .form-section {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
+  }
+  
+  .form-section h5 {
+    color: #2c3e50;
+    font-weight: 700;
+    margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+    padding: 0.75rem 1.5rem;
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e9ecef;
+    border-left: 4px solid #4e73df;
+    border-radius: 0.75rem 0.75rem 0 0;
+    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+  }
+  
+  .form-section h5 i {
+    margin-right: 0.5rem;
+    color: #4e73df;
+  }
+  
+  .header-container {
+    margin: 0 -1.5rem 2rem -1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9fc 0%, #e3e7f0 100%);
+    border-bottom: 1px solid #e3e7f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
+  
+  .header-container h1 {
+    color: #2c3e50;
+    font-weight: 700;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+  }
+  
+  .preview-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px dashed #dee2e6;
+    transition: all 0.2s ease;
+  }
+  
+  .preview-image:hover {
+    border-color: #4e73df;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+  }
+  
+  .form-label {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-text {
+    font-size: 0.825rem;
+    color: #6c757d;
+  }
+  
+  .nav-pills .nav-link {
+    color: #4e73df;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+  }
+  
+  .nav-pills .nav-link.active {
+    background-color: #4e73df;
+    color: white;
+  }
+  
+  .nav-pills .nav-link:not(.active):hover {
+    background-color: #f8f9fc;
+  }
+  
+  .form-section .row {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-section .row:last-child {
+    margin-bottom: 0;
+  }
+  
+  .upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 1rem;
+    background: #f8f9fa;
+  }
+  
+  .upload-area:hover {
+    border-color: #4e73df;
+    background-color: rgba(78, 115, 223, 0.05);
+  }
+  
+  .upload-area i {
+    font-size: 2rem;
+    color: #4e73df;
+    margin-bottom: 0.75rem;
+  }
+  
+  .character-count {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-align: right;
+    margin-top: 0.25rem;
+  }
+  
+  .form-label {
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+    color: #4a5568;
+  }
+  
+  .form-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+  }
+  
+  .required-field::after {
+    content: " *";
+    color: #e74a3b;
+  }
+  
+  .help-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+      <!-- Header -->
+      <div class="header-container">
+        <div class="d-flex flex-column flex-md-row align-items-md-center">
+        <div class="mb-3 mb-md-0 me-md-4">
+          <a href="{% url 'courseplatform:course_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back to Courses
+          </a>
+        </div>
+        <div class="d-flex align-items-center">
+          <h1 class="h3 mb-0 text-gray-800 fw-bold">{{ title }}</h1>
+        </div>
+        <div class="mt-3 mt-md-0">
+          <button type="submit" form="courseForm" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i> Save Changes
+          </button>
+        </div>
+      </div>
+      
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Error!</strong> Please correct the errors below.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endif %}
+
+      <form method="post" novalidate id="courseForm" enctype="multipart/form-data" class="needs-validation" novalidate>
+        {% csrf_token %}
+        
+        <!-- Basic Information -->
+        <div class="form-section">
+          <h5><i class="bi bi-card-text me-2"></i>Basic Information</h5>
+          
+          <!-- Title -->
+          <div class="mb-4">
+            <label for="{{ form.title.id_for_label }}" class="form-label required-field">
+              Course Title
+            </label>
+            {{ form.title|add_class:"form-control form-control-lg"|attr:"placeholder:Enter course title" }}
+            <div class="help-text">Be specific and engaging. Example: "Complete Web Development Bootcamp 2023"</div>
+            {% if form.title.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.title.errors|join:", " }}
+              </div>
+            {% endif %}
+          </div>
+          
+          <!-- Description -->
+          <div class="mb-4">
+            <label for="{{ form.description.id_for_label }}" class="form-label required-field">
+              Course Description
+            </label>
+            {{ form.description|add_class:"form-control"|attr:"rows:5"|attr:"placeholder:What will students learn in this course?" }}
+            <div class="help-text">
+              Provide a detailed overview of your course. Include what students will learn and why they should take this course.
+              <span class="d-block mt-1">Minimum 100 characters. You've written <span id="char-count">0</span> characters.</span>
+            </div>
+            {% if form.description.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.description.errors|join:", " }}
+              </div>
+            {% endif %}
+          </div>
+          
+          <!-- Course Status -->
+          <div class="mb-4">
+            <label class="form-label d-block mb-2">Course Status</label>
+            <div class="form-check form-switch d-inline-block">
+              {{ form.is_published|add_class:"form-check-input"|attr:"role:switch" }}
+              <label class="form-check-label" for="{{ form.is_published.id_for_label }}">
+                {% if form.is_published.value %}
+                  <span class="text-success fw-medium">Published</span>
+                {% else %}
+                  <span class="text-muted">Draft</span>
+                {% endif %}
+              </label>
+            </div>
+            <div class="help-text">
+              Draft courses are only visible to you. Published courses are visible to students.
+            </div>
+          </div>
+        </div>
+        
+        <!-- Course Media -->
+        <div class="form-section">
+          <h5><i class="bi bi-image me-2"></i>Course Media</h5>
+          
+          <div class="mb-4">
+            <label class="form-label">Course Thumbnail</label>
+            <div class="upload-area" id="thumbnail-upload-area">
+              <i class="bi bi-cloud-arrow-up"></i>
+              <h6 class="mb-1">Upload Course Thumbnail</h6>
+              <p class="text-muted small mb-0">Drag & drop or click to browse<br>Recommended: 800x450px, JPG/PNG (max 2MB)</p>
+              {{ form.thumbnail|add_class:"d-none" }}
+            </div>
+            <div id="thumbnail-preview-container" class="mt-3">
+              {% if course and course.thumbnail %}
+                <img src="{{ course.thumbnail.url }}" id="thumbnail-preview" class="preview-image">
+              {% endif %}
+            </div>
+            {% if form.thumbnail.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.thumbnail.errors|join:", " }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <!-- Course Media -->
+        <div class="form-section">
+          <h5><i class="bi bi-image"></i> Course Media</h5>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-4">
+                <label for="{{ form.thumbnail.id_for_label }}" class="form-label">Course Thumbnail</label>
+                {% if form.instance.thumbnail %}
+                  <img src="{{ form.instance.thumbnail.url }}" class="img-thumbnail mb-2 d-block" style="max-height: 200px;" id="thumbnail-preview">
+                {% else %}
+                  <div class="border rounded d-flex align-items-center justify-content-center mb-2" style="height: 200px; background-color: #f8f9fa;" id="thumbnail-preview">
+                    <div class="text-center text-muted">
+                      <i class="bi bi-image fs-1"></i>
+                      <p class="mb-0">No thumbnail selected</p>
+                    </div>
+                  </div>
+                {% endif %}
+                {{ form.thumbnail|add_class:"form-control" }}
+                <div class="form-text">Recommended size: 1280x720px (16:9 aspect ratio)</div>
+                {% if form.thumbnail.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.thumbnail.errors|join:", " }}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="mb-4">
+                <label for="{{ form.promo_video.id_for_label }}" class="form-label">Promo Video URL</label>
+                {{ form.promo_video|add_class:"form-control"|attr:"placeholder:https://www.youtube.com/watch?v=..." }}
+                <div class="form-text">A short video introducing your course</div>
+                {% if form.promo_video.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.promo_video.errors|join:", " }}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="mb-4">
+                <label class="form-label">Course Videos</label>
+                <div class="border rounded p-3" style="background-color: #f8f9fa;">
+                  <p class="text-muted small mb-3">Add YouTube videos to your course. You can reorder them using the order field.</p>
+                  
+                  {{ formset.management_form }}
+                  <div id="video-forms">
+                    {% for video_form in formset %}
+                    <div class="video-form mb-3 p-3 border rounded bg-white">
+                      <div class="row g-2">
+                        <div class="col-md-5">
+                          {{ video_form.title|add_class:"form-control form-control-sm"|attr:"placeholder:Video Title" }}
+                          {% if video_form.title.errors %}
+                            <div class="invalid-feedback d-block">
+                              {{ video_form.title.errors|join:", " }}
+                            </div>
+                          {% endif %}
+                        </div>
+                        <div class="col-md-5">
+                          {{ video_form.youtube_url|add_class:"form-control form-control-sm"|attr:"placeholder:YouTube URL" }}
+                          {% if video_form.youtube_url.errors %}
+                            <div class="invalid-feedback d-block">
+                              {{ video_form.youtube_url.errors|join:", " }}
+                            </div>
+                          {% endif %}
+                        </div>
+                        <div class="col-md-2">
+                          <div class="input-group input-group-sm">
+                            {{ video_form.order|add_class:"form-control form-control-sm"|attr:"placeholder:Order" }}
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.video-form').remove(); updateFormIndices();">
+                              <i class="bi bi-trash"></i>
+                            </button>
+                          </div>
+                          {% if video_form.order.errors %}
+                            <div class="invalid-feedback d-block">
+                              {{ video_form.order.errors|join:", " }}
+                            </div>
+                          {% endif %}
+                        </div>
+                        {{ video_form.id }}
+                        {{ video_form.DELETE|add_class:"d-none" }}
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                  
+                  <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-video">
+                    <i class="bi bi-plus-lg me-1"></i> Add Video
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Course Information -->
+        <div class="form-section">
+          <h5><i class="bi bi-info-circle"></i> Course Information</h5>
+          
+          <div class="mb-4">
+            <label for="{{ form.title.id_for_label }}" class="form-label">Course Title</label>
+            {{ form.title|add_class:"form-control"|attr:"placeholder:Enter course title" }}
+            <div class="form-text">Make it catchy and descriptive</div>
+            {% if form.title.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.title.errors|join:", " }}
+              </div>
+            {% endif %}
+          </div>
+          
+          <div class="mb-4">
+            <label for="{{ form.short_description.id_for_label }}" class="form-label">Short Description</label>
+            {{ form.short_description|add_class:"form-control"|attr:"placeholder:Enter a brief description (max 300 characters)" }}
+            <div class="form-text">Appears in course cards and search results</div>
+            {% if form.short_description.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.short_description.errors|join:", " }}
+              </div>
+            {% endif %}
+          </div>
+          
+          <div class="mb-4">
+            <label for="{{ form.description.id_for_label }}" class="form-label">Detailed Description</label>
+            {{ form.description|add_class:"form-control"|attr:"rows:5" }}
+            <div class="form-text">Tell students what your course is about in detail</div>
+            {% if form.description.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.description.errors|join:", " }}
+              </div>
+            {% endif %}
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
+                {{ form.category|add_class:"form-control"|attr:"placeholder:e.g., Web Development, Data Science" }}
+                {% if form.category.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.category.errors|join:", " }}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="{{ form.level.id_for_label }}" class="form-label">Difficulty Level</label>
+                {{ form.level|add_class:"form-select" }}
+                {% if form.level.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.level.errors|join:", " }}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="{{ form.what_youll_learn.id_for_label }}" class="form-label">What Will Students Learn?</label>
+            {{ form.what_youll_learn|add_class:"form-control"|attr:"rows:5" }}
+            <div class="form-text">List the key learning outcomes (one per line)</div>
+            {% if form.what_youll_learn.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.what_youll_learn.errors|join:", " }}
+              </div>
+            {% endif %}
+          </div>
+          
+          <div class="mb-3">
+            <label for="{{ form.requirements.id_for_label }}" class="form-label">Requirements</label>
+            {{ form.requirements|add_class:"form-control"|attr:"rows:3" }}
+            <div class="form-text">List any prerequisites or requirements (one per line)</div>
+            {% if form.requirements.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.requirements.errors|join:", " }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <!-- Course Details -->
+        <div class="form-section">
+          <h5><i class="bi bi-gear me-2"></i>Course Details</h5>
+          
+          <div class="row g-3">
+            <!-- Instructor -->
+            <div class="col-md-6">
+              <label for="{{ form.instructor.id_for_label }}" class="form-label required-field">
+                Instructor
+              </label>
+              {{ form.instructor|add_class:"form-control"|attr:"placeholder:Instructor's full name" }}
+              {% if form.instructor.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.instructor.errors|join:", " }}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Category -->
+            <div class="col-md-6">
+              <label for="{{ form.category.id_for_label }}" class="form-label">
+                Category
+              </label>
+              {{ form.category|add_class:"form-select"|attr:"data-placeholder:Select a category" }}
+              {% if form.category.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.category.errors|join:", " }}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Level -->
+            <div class="col-md-4">
+              <label for="{{ form.level.id_for_label }}" class="form-label required-field">
+                Difficulty Level
+              </label>
+              {{ form.level|add_class:"form-select" }}
+              {% if form.level.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.level.errors|join:", " }}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Price -->
+            <div class="col-md-4">
+              <label for="{{ form.price.id_for_label }}" class="form-label">
+                Price (₹)
+              </label>
+              <div class="input-group">
+                <span class="input-group-text">₹</span>
+                {{ form.price|add_class:"form-control"|attr:"placeholder:0.00" }}
+              </div>
+              <div class="help-text">Leave as 0 for free course</div>
+              {% if form.price.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.price.errors|join:", " }}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Duration -->
+            <div class="col-md-4">
+              <label for="{{ form.duration.id_for_label }}" class="form-label">
+                Duration (weeks)
+              </label>
+              {{ form.duration|add_class:"form-control"|attr:"placeholder:e.g. 8" }}
+              <div class="help-text">Estimated course length</div>
+              {% if form.duration.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.duration.errors|join:", " }}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Start & End Dates -->
+            <div class="col-md-6">
+              <label for="{{ form.start_date.id_for_label }}" class="form-label">
+                Start Date
+              </label>
+              <div class="input-group">
+                {{ form.start_date|add_class:"form-control datepicker"|attr:"autocomplete:off" }}
+                <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+              </div>
+              <div class="help-text">Leave empty for self-paced courses</div>
+              {% if form.start_date.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.start_date.errors|join:", " }}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label for="{{ form.end_date.id_for_label }}" class="form-label">
+                End Date (optional)
+              </label>
+              <div class="input-group">
+                {{ form.end_date|add_class:"form-control datepicker"|attr:"autocomplete:off" }}
+                <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+              </div>
+              <div class="help-text">For time-limited courses only</div>
+              {% if form.end_date.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.end_date.errors|join:", " }}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        
+        <!-- Course Requirements -->
+        <div class="form-section">
+          <h5><i class="bi bi-list-check me-2"></i>Requirements</h5>
+          <div class="mb-3">
+            <label for="{{ form.requirements.id_for_label }}" class="form-label">
+              What should students know or have before taking this course?
+            </label>
+            {{ form.requirements|add_class:"form-control"|attr:"rows:3"|attr:"placeholder:Example: Basic programming knowledge, A computer with internet access" }}
+            <div class="help-text">List any prerequisites or requirements (one per line)</div>
+            {% if form.requirements.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.requirements.errors|join:", " }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <!-- Learning Outcomes -->
+        <div class="form-section">
+          <h5><i class="bi bi-award me-2"></i>Learning Outcomes</h5>
+          <div class="mb-3">
+            <label for="{{ form.outcomes.id_for_label }}" class="form-label">
+              What will students be able to do after completing this course?
+            </label>
+            {{ form.outcomes|add_class:"form-control"|attr:"rows:3"|attr:"placeholder:Example: Build a complete web application, Understand fundamental programming concepts" }}
+            <div class="help-text">List the key skills or knowledge students will gain (one per line)</div>
+            {% if form.outcomes.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.outcomes.errors|join:", " }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      
+      <!-- Form Actions -->
+      <div class="form-section bg-light mt-4">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center">
+          <div class="mb-3 mb-sm-0">
+            <a href="{% if course %}{% url 'courseplatform:course_detail' course.pk %}{% else %}{% url 'courseplatform:course_list' %}{% endif %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left me-1"></i> Cancel
+            </a>
+          </div>
+          <div class="d-flex flex-column flex-sm-row">
+            <button type="submit" name="save_draft" class="btn btn-outline-primary me-0 me-sm-2 mb-2 mb-sm-0" id="saveDraftBtn">
+              <i class="bi bi-save me-1"></i> Save as Draft
+            </button>
+            <button type="submit" name="publish" class="btn btn-primary">
+              <i class="bi bi-check-circle me-1"></i> 
+              {% if course %}Update{% else %}Publish{% endif %} Course
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Loading Spinner -->
+<div class="spinner-container" id="formSpinner">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Flatpickr for date picker -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize date pickers
+  const dateInputs = document.querySelectorAll('.datepicker');
+  dateInputs.forEach(input => {
+    flatpickr(input, {
+      dateFormat: 'Y-m-d',
+      allowInput: true,
+      minDate: input.id === '{{ form.start_date.id_for_label }}' ? 'today' : undefined
+    });
+  });
+  
+  // Set minimum end date based on start date
+  const startDateInput = document.getElementById('{{ form.start_date.id_for_label }}');
+  const endDateInput = document.getElementById('{{ form.end_date.id_for_label }}');
+  
+  if (startDateInput && endDateInput) {
+    startDateInput.addEventListener('change', function() {
+      const endPicker = endDateInput._flatpickr;
+      if (this.value) {
+        endPicker.set('minDate', this.value);
+        if (endDateInput.value && new Date(endDateInput.value) < new Date(this.value)) {
+          endPicker.clear();
+        }
+      }
+    });
+  }
+  
+  // Enhanced thumbnail upload preview with drag and drop
+  const thumbnailUpload = document.getElementById('thumbnail-upload');
+  const thumbnailInput = document.getElementById('id_thumbnail');
+  const thumbnailPreview = document.getElementById('thumbnail-preview');
+  const thumbnailContainer = document.getElementById('thumbnail-preview-container');
+  
+  if (thumbnailUpload && thumbnailInput) {
+    // Click to upload
+    thumbnailUpload.addEventListener('click', () => thumbnailInput.click());
+    
+    // Handle file selection
+    thumbnailInput.addEventListener('change', handleFileSelect);
+    
+    // Set up drag and drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      thumbnailUpload.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+      thumbnailUpload.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+      thumbnailUpload.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+      thumbnailUpload.classList.add('bg-light');
+    }
+    
+    function unhighlight() {
+      thumbnailUpload.classList.remove('bg-light');
+    }
+    
+    // Handle dropped files
+    thumbnailUpload.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      handleFiles(files);
+    }
+    
+    function handleFileSelect(e) {
+      const files = e?.target?.files || [];
+      if (files.length > 0) {
+        handleFiles(files);
+      }
+    }
+    
+    function handleFiles(files) {
+      const file = files[0];
+      
+      // Validate file type
+      if (!file.type.match('image.*')) {
+        showAlert('Please select an image file (JPEG, PNG, etc.)', 'danger');
+        return;
+      }
+      
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        showAlert('File is too large. Maximum size is 2MB.', 'danger');
+        return;
+      }
+      
+      // Create preview
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        // Create or update preview image
+        let preview = thumbnailPreview;
+        
+        if (!preview) {
+          preview = document.createElement('img');
+          preview.id = 'thumbnail-preview';
+          preview.className = 'preview-image';
+          thumbnailContainer.innerHTML = '';
+          thumbnailContainer.appendChild(preview);
+        }
+        
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        
+        // Show success message
+        showAlert('Thumbnail uploaded successfully!', 'success');
+      };
+      
+      reader.readAsDataURL(file);
+    }
+    
+    // Show existing thumbnail if editing
+    if (thumbnailPreview && thumbnailPreview.src && !thumbnailPreview.src.includes('data:')) {
+      thumbnailPreview.style.display = 'block';
+    }
+  }
+  
+  // Enhanced character counting with validation
+  const textFields = [
+    { 
+      id: '{{ form.title.id_for_label }}', 
+      counterId: 'title-count', 
+      max: 100,
+      min: 10,
+      required: true
+    },
+    { 
+      id: '{{ form.description.id_for_label }}', 
+      counterId: 'description-count', 
+      max: 2000,
+      min: 100,
+      required: true,
+      helpText: 'Provide a detailed description of your course (minimum 100 characters)'
+    },
+    { 
+      id: '{{ form.requirements.id_for_label }}', 
+      counterId: 'requirements-count', 
+      max: 1000,
+      min: 10,
+      required: true,
+      helpText: 'List any requirements or prerequisites for this course'
+    },
+    { 
+      id: '{{ form.outcomes.id_for_label }}', 
+      counterId: 'outcomes-count', 
+      max: 1000,
+      min: 10,
+      required: true,
+      helpText: 'What will students learn or be able to do after completing this course?'
+    }
+  ];
+  
+  textFields.forEach(item => {
+    const element = document.getElementById(item.id);
+    const counter = document.getElementById(item.counterId);
+    
+    if (element && counter) {
+      // Initial count and validation
+      updateCounter(element, counter, item);
+      
+      // Add help text if specified
+      if (item.helpText) {
+        const helpText = document.createElement('div');
+        helpText.className = 'form-text text-muted';
+        helpText.textContent = item.helpText;
+        element.parentNode.insertBefore(helpText, element.nextSibling);
+      }
+      
+      // Update on input
+      element.addEventListener('input', () => updateCounter(element, counter, item));
+      
+      // Add validation on blur
+      element.addEventListener('blur', () => validateField(element, item));
+    }
+  });
+  
+  // Enhanced field validation
+  function validateField(element, field) {
+    const value = element.value.trim();
+    const parent = element.closest('.form-group') || element.parentNode;
+    
+    // Remove existing validation messages
+    const existingError = parent.querySelector('.invalid-feedback');
+    if (existingError) {
+      parent.removeChild(existingError);
+    }
+    
+    // Check required fields
+    if (field.required && !value) {
+      showFieldError(element, 'This field is required');
+      return false;
+    }
+    
+    // Check minimum length
+    if (value && value.length < field.min) {
+      showFieldError(element, `Must be at least ${field.min} characters`);
+      return false;
+    }
+    
+    // Check maximum length
+    if (value && value.length > field.max) {
+      showFieldError(element, `Cannot exceed ${field.max} characters`);
+      return false;
+    }
+    
+    // If we get here, the field is valid
+    element.classList.remove('is-invalid');
+    element.classList.add('is-valid');
+    return true;
+  }
+  
+  function showFieldError(element, message) {
+    element.classList.add('is-invalid');
+    element.classList.remove('is-valid');
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'invalid-feedback';
+    errorDiv.textContent = message;
+    
+    const parent = element.closest('.form-group') || element.parentNode;
+    parent.appendChild(errorDiv);
+  }
+  
+  // Enhanced save as draft button
+  const saveDraftBtn = document.getElementById('saveDraftBtn');
+  const isPublishedField = document.getElementById('{{ form.is_published.id_for_label }}');
+  
+  if (saveDraftBtn) {
+    saveDraftBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      // Set as draft
+      if (isPublishedField) {
+        isPublishedField.checked = false;
+      }
+      
+      // Skip validation for draft
+      const form = document.getElementById('courseForm');
+      if (form) {
+        // Show loading state
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving Draft...';
+        }
+        
+        // Submit the form
+        form.submit();
+      }
+    });
+  }
+  
+  // Enhanced form submission handling with validation
+  const form = document.getElementById('courseForm');
+  const formSpinner = document.getElementById('formSpinner');
+  
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      let isValid = true;
+      
+      // Validate all fields
+      textFields.forEach(item => {
+        const element = document.getElementById(item.id);
+        if (element) {
+          const fieldValid = validateField(element, item);
+          if (!fieldValid) {
+            isValid = false;
+            
+            // Scroll to first error
+            if (isValid === false) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              element.focus();
+              // Set to true so we only scroll to the first error
+              isValid = null;
+            }
+          }
+        }
+      });
+      
+      // If form is not valid, prevent submission
+      if (isValid === false) {
+        e.preventDefault();
+        showAlert('Please fix the errors in the form before submitting.', 'danger');
+        return false;
+      }
+      
+      // Show loading spinner
+      if (formSpinner) {
+        formSpinner.style.display = 'flex';
+      }
+      
+      // Disable submit button to prevent double submission
+      const submitBtn = document.getElementById('submitBtn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...';
+      }
+      
+      // If we get here, the form is valid and will be submitted
+      return true;
+    });
+  }
+  
+  // Enhanced counter function with validation states
+  function updateCounter(element, counter, field) {
+    const length = element.value.length;
+    const remaining = field.max - length;
+    
+    // Update counter text
+    counter.textContent = `${length}/${field.max} characters`;
+    
+    // Update counter style based on length
+    counter.className = 'character-count';
+    
+    // Add appropriate classes based on length
+    if (field.required && length < field.min) {
+      counter.classList.add('text-danger');
+      counter.innerHTML += ' (minimum ' + field.min + ' characters)';
+    } else if (length > field.max) {
+      counter.classList.add('text-danger', 'fw-bold');
+      counter.innerHTML += ' (exceeds maximum length)';
+    } else if (length > field.max * 0.9) {
+      counter.classList.add('text-warning');
+      counter.innerHTML += ` (${remaining} characters remaining)`;
+    } else if (length > field.max * 0.7) {
+      counter.classList.add('text-info');
+      counter.innerHTML += ` (${remaining} characters remaining)`;
+    } else {
+      counter.classList.add('text-muted');
+    }
+    
+    // Validate the field
+    validateField(element, field);
+  }
+  
+  // Helper function to show alert messages
+  function showAlert(message, type = 'info') {
+    // Remove any existing alerts
+    const existingAlerts = document.querySelectorAll('.alert-dismissible');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    // Create new alert
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show mb-4`;
+    alertDiv.role = 'alert';
+    
+    // Add icon based on alert type
+    let icon = 'info-circle';
+    if (type === 'success') icon = 'check-circle';
+    if (type === 'danger') icon = 'exclamation-triangle';
+    if (type === 'warning') icon = 'exclamation-circle';
+    
+    alertDiv.innerHTML = `
+      <i class="bi bi-${icon} me-2"></i>
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Insert alert at the top of the form
+    const form = document.getElementById('courseForm');
+    if (form) {
+      form.parentNode.insertBefore(alertDiv, form);
+      
+      // Auto-dismiss after 5 seconds
+      setTimeout(() => {
+        const bsAlert = new bootstrap.Alert(alertDiv);
+        bsAlert.close();
+      }, 5000);
+    }
+  }
+});
+
+// Thumbnail preview
+function readURL(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+      const preview = document.getElementById('thumbnail-preview');
+      preview.innerHTML = `<img src="${e.target.result}" class="img-thumbnail" style="max-height: 200px; width: 100%; object-fit: cover;">`;
+    }
+    
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+// Video form management
+function updateFormIndices() {
+  const forms = document.querySelectorAll('.video-form');
+  const totalForms = document.getElementById('id_videos-TOTAL_FORMS');
+  
+  forms.forEach((form, index) => {
+    // Update form index in all field names
+    form.querySelectorAll('input, select, textarea').forEach(input => {
+      if (input.name && input.name.includes('__prefix__')) {
+        input.name = input.name.replace(/__prefix__/g, index);
+      }
+      input.id = input.id && input.id.replace(/__prefix__/g, index);
+      if (input.name) {
+        input.name = input.name.replace(/\d+/, index);
+      }
+    });
+    
+    // Update form index in labels
+    form.querySelectorAll('label').forEach(label => {
+      const forAttr = label.getAttribute('for');
+      if (forAttr) {
+        label.setAttribute('for', forAttr.replace(/\d+/, index));
+      }
+    });
+  });
+  
+  // Update total forms count
+  totalForms.value = forms.length;
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  // Thumbnail preview
+  const thumbnailInput = document.getElementById('{{ form.thumbnail.id_for_label }}');
+  if (thumbnailInput) {
+    thumbnailInput.addEventListener('change', function() {
+      readURL(this);
+    });
+  }
+  
+  // Add new video form
+  const addButton = document.getElementById('add-video');
+  if (addButton) {
+    const formCount = parseInt(document.getElementById('id_videos-TOTAL_FORMS').value);
+    
+    addButton.addEventListener('click', function() {
+      const formIdx = document.querySelectorAll('.video-form').length;
+      const newForm = document.createElement('div');
+      newForm.className = 'video-form mb-3 p-3 border rounded bg-white';
+      newForm.innerHTML = `
+        <div class="row g-2">
+          <div class="col-md-5">
+            <input type="text" name="videos-${formIdx}-title" class="form-control form-control-sm" placeholder="Video Title" id="id_videos-${formIdx}-title">
+          </div>
+          <div class="col-md-5">
+            <input type="url" name="videos-${formIdx}-youtube_url" class="form-control form-control-sm" placeholder="YouTube URL" id="id_videos-${formIdx}-youtube_url">
+          </div>
+          <div class="col-md-2">
+            <div class="input-group input-group-sm">
+              <input type="number" name="videos-${formIdx}-order" class="form-control form-control-sm" placeholder="Order" value="${formIdx + 1}" id="id_videos-${formIdx}-order">
+              <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.video-form').remove(); updateFormIndices();">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+          <input type="hidden" name="videos-${formIdx}-id" id="id_videos-${formIdx}-id">
+          <input type="hidden" name="videos-${formIdx}-DELETE" id="id_videos-${formIdx}-DELETE">
+        </div>
+      `;
+      
+      document.getElementById('video-forms').appendChild(newForm);
+      document.getElementById('id_videos-TOTAL_FORMS').value = formIdx + 1;
+    });
+    
+    // Initialize form indices
+    updateFormIndices();
+  }
+  
+  // Toggle publish button text based on checkbox
+  const publishCheckbox = document.getElementById('{{ form.is_published.id_for_label }}');
+  const publishButton = document.querySelector('button[name="publish"]');
+  
+  if (publishCheckbox && publishButton) {
+    publishCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        publishButton.innerHTML = '<i class="bi bi-check-circle me-1"></i> Publish Course';
+      } else {
+        publishButton.innerHTML = '<i class="bi bi-save me-1"></i> Save as Draft';
+      }
+    });
+  }
+});
+</script>
+
+<style>
+  /* Video form styles */
+  .video-form {
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+  }
+  
+  .video-form:hover {
+    background-color: #f1f3f5;
+  }
+  
+  .form-control, .form-select {
+    border-radius: 0.5rem;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+  }
+  
+  .form-control:focus, .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+  }
+  
+  .input-group-text {
+    border-radius: 0.5rem 0 0 0.5rem;
+    border: 2px solid #e9ecef;
+    border-right: none;
+    background-color: #f8f9fa;
+  }
+  
+  .input-group .form-control {
+    border-radius: 0 0.5rem 0.5rem 0;
+    border-left: none;
+  }
+  
+  .form-check-input:checked {
+    background-color: #667eea;
+    border-color: #667eea;
+  }
+  
+  .card {
+    transition: transform 0.3s ease;
+  }
+  
+  .card:hover {
+    transform: translateY(-2px);
+  }
+</style>
+{% endblock %}

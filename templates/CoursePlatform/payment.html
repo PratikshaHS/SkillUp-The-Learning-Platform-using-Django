@@ -1,0 +1,489 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+  .payment-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 3rem 0;
+  }
+  
+  .StripeElement {
+    box-sizing: border-box;
+    height: 40px;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: white;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+
+  .StripeElement--focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+
+  .StripeElement--invalid {
+    border-color: #fa755a;
+  }
+
+  .StripeElement--webkit-autofill {
+    background-color: #fefde5 !important;
+  }
+  
+  #card-errors {
+    color: #dc3545;
+    margin-top: 0.5rem;
+    font-size: 0.875em;
+    display: none;
+  }
+  
+  #submit-payment {
+    transition: all 0.3s ease;
+  }
+  
+  .payment-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  .payment-header {
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    color: white;
+    padding: 1.5rem;
+    text-align: center;
+  }
+  
+  .payment-body {
+    padding: 2rem;
+    background-color: white;
+  }
+  
+  .payment-summary {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .test-card-info {
+    border-left: 4px solid #28a745;
+  }
+  
+  .test-card.active {
+    border-color: #0d6efd;
+    background-color: #e7f1ff;
+  }
+  
+  .btn-pay {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-pay:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .btn-pay:active {
+    transform: translateY(0);
+  }
+  
+  .btn-pay::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+  
+  .btn-pay:hover::before {
+    transform: translateX(100%);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-container">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12">
+        <div class="payment-card">
+          <!-- Header -->
+          <div class="payment-header">
+            <h2>Complete Your Purchase</h2>
+            <p class="mb-0">Securely complete your payment</p>
+          </div>
+          
+          <div class="payment-body">
+            <div class="row">
+              <!-- Order Summary -->
+              <div class="col-lg-5 mb-4">
+                <h5 class="mb-3">Order Summary</h5>
+                <div class="payment-summary">
+                  <div class="d-flex justify-content-between mb-2">
+                    <span>Course:</span>
+                    <strong>{{ course.title }}</strong>
+                  </div>
+                  <div class="d-flex justify-content-between mb-2">
+                    <span>Price:</span>
+                    <span>₹{{ course.price|floatformat:2 }}</span>
+                  </div>
+                  {% if course.discount_price %}
+                  <div class="d-flex justify-content-between mb-2 text-success">
+                    <span>Discount:</span>
+                    <span>-₹{{ course.get_discount_amount|floatformat:2 }}</span>
+                  </div>
+                  {% endif %}
+                  <hr>
+                  <div class="d-flex justify-content-between fw-bold">
+                    <span>Total:</span>
+                    <span>₹{{ course.get_final_price|floatformat:2 }}</span>
+                  </div>
+                </div>
+                
+                <div class="mt-4">
+                  <h6>What's included:</h6>
+                  <ul class="list-unstyled">
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Lifetime access to course content</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Certificate of completion</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> 30-day money-back guarantee</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Instructor Q&A support</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <!-- Payment Section -->
+              <div class="col-lg-7">
+                <h5 class="mb-3">Payment Method</h5>
+                
+                <!-- Payment Methods Selection -->
+                <div class="payment-methods mb-4">
+                  <div class="mb-3">
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="payment-method" id="credit-card" value="card" checked>
+                      <label class="form-check-label" for="credit-card">
+                        <i class="bi bi-credit-card"></i> Credit/Debit Card
+                      </label>
+                    </div>
+                    <div class="form-check mb-3">
+                      <input class="form-check-input" type="radio" name="payment-method" id="paypal" value="paypal">
+                      <label class="form-check-label" for="paypal">
+                        <i class="bi bi-paypal"></i> PayPal
+                      </label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="payment-method" id="upi" value="upi">
+                      <label class="form-check-label" for="upi">
+                        <i class="bi bi-phone"></i> UPI
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Payment Form -->
+                <form id="payment-form" class="mt-4">
+                  {% csrf_token %}
+                  <input type="hidden" name="payment_intent_id" id="payment-intent-id">
+                  <div id="payment-data" data-client-secret="{{ client_secret }}"></div>
+                  
+                  <!-- Card Payment Section -->
+                  <div id="card-payment-section">
+                    <div class="test-card-info mb-4 p-3 bg-light rounded">
+                      <h6 class="mb-2">Test Card (For Development Only)</h6>
+                      <div class="small text-muted mb-2">Use any future date and any 3-digit CVC</div>
+                      <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-success test-card" data-card="4242424242424242">
+                          4242 4242 4242 4242 (Success)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-info test-card" data-card="4000002500003155">
+                          4000 0025 0000 3155 (3D Secure)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-warning test-card" data-card="4000000000009995">
+                          4000 0000 0000 9995 (Insufficient)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger test-card" data-card="4000000000000002">
+                          4000 0000 0000 0002 (Declined)
+                        </button>
+                      </div>
+                      <div class="small text-muted mt-2">
+                        <div>Expiry: Any future date (e.g., 12/30)</div>
+                        <div>CVC: Any 3 digits (e.g., 123)</div>
+                      </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                      <label class="form-label">Cardholder Name</label>
+                      <input type="text" id="cardholder-name" class="form-control" placeholder="Name on card" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                      <label class="form-label">Card Information</label>
+                      <div id="card-element" class="form-control p-2">
+                        <!-- A Stripe Element will be inserted here. -->
+                      </div>
+                      <!-- Used to display form errors. -->
+                      <div id="card-errors" class="text-danger mt-2" role="alert"></div>
+                    </div>
+                    
+                    <div class="d-grid">
+                      <button id="submit-payment" class="btn btn-primary btn-lg" type="submit">
+                        Pay ₹{{ course.get_final_price|floatformat:2 }}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- UPI Payment Section -->
+                  <div id="upi-payment-section" class="d-none">
+                    <div class="mb-3">
+                      <label class="form-label">UPI ID</label>
+                      <input type="text" id="upi-id" class="form-control" placeholder="yourname@upi">
+                    </div>
+                    <div class="d-grid">
+                      <button type="button" id="pay-with-upi" class="btn btn-primary btn-lg">
+                        Pay with UPI
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- PayPal Payment Section -->
+                  <div id="paypal-payment-section" class="d-none">
+                    <div class="d-flex justify-content-center">
+                      <div id="paypal-button-container"></div>
+                    </div>
+                  </div>
+                </form>
+                
+                <div class="mt-4 text-center">
+                  <p class="small text-muted">
+                    <i class="bi bi-lock-fill"></i> Your payment is secure and encrypted.
+                  </p>
+                  <div class="d-flex justify-content-center gap-3">
+                    <img src="{% static 'images/visa.png' %}" alt="Visa" height="30">
+                    <img src="{% static 'images/mastercard.png' %}" alt="Mastercard" height="30">
+                    <img src="{% static 'images/amex.png' %}" alt="American Express" height="30">
+                    <img src="{% static 'images/rupay.png' %}" alt="RuPay" height="30">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Load Stripe.js -->
+<script src="https://js.stripe.com/v3/"></script>
+
+<script>
+// Initialize Stripe with your publishable key
+const stripe = Stripe('{{ STRIPE_PUBLIC_KEY }}');
+
+// Create an instance of Elements
+const elements = stripe.elements();
+
+// Custom styling for the card element
+const style = {
+    base: {
+        color: '#32325d',
+        fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+        fontSmoothing: 'antialiased',
+        fontSize: '16px',
+        '::placeholder': {
+            color: '#aab7c4'
+        }
+    },
+    invalid: {
+        color: '#fa755a',
+        iconColor: '#fa755a'
+    }
+};
+
+// Create an instance of the card Element
+const card = elements.create('card', { 
+    style: style,
+    hidePostalCode: true
+});
+
+// Add an instance of the card Element into the `card-element` div
+card.mount('#card-element');
+
+// Handle real-time validation errors from the card Element
+card.on('change', function(event) {
+    const displayError = document.getElementById('card-errors');
+    if (event.error) {
+        displayError.textContent = event.error.message;
+        displayError.style.display = 'block';
+    } else {
+        displayError.textContent = '';
+        displayError.style.display = 'none';
+    }
+});
+
+// Handle payment method selection
+document.querySelectorAll('input[name="payment-method"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        // Hide all payment sections
+        document.querySelectorAll('[id$="-payment-section"]').forEach(section => {
+            section.classList.add('d-none');
+        });
+        
+        // Show selected payment section
+        const selectedSection = document.getElementById(`${this.value}-payment-section`);
+        if (selectedSection) {
+            selectedSection.classList.remove('d-none');
+        }
+    });
+});
+
+// Handle form submission
+const form = document.getElementById('payment-form');
+form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    
+    const submitButton = document.getElementById('submit-payment');
+    const originalText = submitButton.innerHTML;
+    
+    // Disable the submit button to prevent multiple submissions
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+    
+    try {
+        // Get the client secret from the data attribute
+        const clientSecret = document.getElementById('payment-data').dataset.clientSecret;
+        
+        if (!clientSecret) {
+            throw new Error('Payment initialization failed. Please refresh the page and try again.');
+        }
+        
+        // Get the selected payment method
+        const selectedMethod = document.querySelector('input[name="payment-method"]:checked').value;
+        
+        if (selectedMethod === 'card') {
+            await handleCardPayment(clientSecret);
+        } else if (selectedMethod === 'upi') {
+            await handleUPIPayment();
+        } else if (selectedMethod === 'paypal') {
+            // PayPal will handle its own submission
+            return;
+        }
+        
+    } catch (error) {
+        console.error('Payment error:', error);
+        const errorElement = document.getElementById('card-errors');
+        errorElement.textContent = error.message || 'An error occurred while processing your payment. Please try again.';
+        errorElement.style.display = 'block';
+        
+        // Re-enable the submit button
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalText;
+    }
+});
+
+// Handle card payment
+async function handleCardPayment(clientSecret) {
+    const cardholderName = document.getElementById('cardholder-name').value;
+    
+    if (!cardholderName) {
+        throw new Error('Please enter the cardholder name');
+    }
+    
+    // Create payment method with card details
+    const { paymentMethod, error: paymentMethodError } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: card,
+        billing_details: {
+            name: cardholderName,
+            email: '{{ request.user.email }}'
+        }
+    });
+    
+    if (paymentMethodError) {
+        throw paymentMethodError;
+    }
+    
+    // Confirm the payment with the PaymentIntent
+    const { paymentIntent, error: confirmError } = await stripe.confirmCardPayment(
+        clientSecret,
+        {
+            payment_method: paymentMethod.id,
+            receipt_email: '{{ request.user.email }}',
+            setup_future_usage: 'off_session'
+        }
+    );
+    
+    if (confirmError) {
+        throw confirmError;
+    }
+    
+    if (paymentIntent.status === 'succeeded') {
+        // Add the payment intent ID to the form and submit
+        document.getElementById('payment-intent-id').value = paymentIntent.id;
+        form.submit();
+    } else {
+        throw new Error('Payment failed. Please try again.');
+    }
+}
+
+// Handle UPI payment
+async function handleUPIPayment() {
+    const upiId = document.getElementById('upi-id').value;
+    
+    if (!upiId) {
+        throw new Error('Please enter a valid UPI ID');
+    }
+    
+    // In a real implementation, you would integrate with a UPI payment gateway
+    // This is a placeholder for the UPI integration
+    return new Promise((resolve, reject) => {
+        // Simulate API call
+        setTimeout(() => {
+            // For demo purposes, we'll assume the payment was successful
+            // In a real implementation, you would handle the UPI payment flow here
+            form.submit();
+            resolve();
+        }, 1000);
+    });
+}
+
+// Handle test card buttons
+document.querySelectorAll('.test-card').forEach(button => {
+    button.addEventListener('click', function() {
+        // This is just for demo purposes - in a real implementation,
+        // you would need to use Stripe Elements test cards
+        const cardNumber = this.getAttribute('data-card');
+        
+        // Show which card is selected
+        document.querySelectorAll('.test-card').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        this.classList.add('active');
+        
+        // In a real implementation, you would use Stripe Elements to set the card number
+        // For demo purposes, we'll just show an alert
+        alert(`Test card ${cardNumber} selected. In a real implementation, this would auto-fill the card details.`);
+    });
+});
+
+// Initialize PayPal button if PayPal is selected
+// Note: This is a placeholder - you would need to implement the PayPal integration
+if (document.getElementById('paypal-button-container')) {
+    // This is where you would initialize the PayPal button
+    // For example:
+    // paypal.Buttons({...}).render('#paypal-button-container');
+    console.log('PayPal container found - initialize PayPal SDK here');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,2034 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+  .payment-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 3rem 0;
+  }
+  
+  /* Stripe Element styling */
+  .StripeElement {
+    box-sizing: border-box;
+    height: 40px;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: white;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+
+  .StripeElement--focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+
+  .StripeElement--invalid {
+    border-color: #fa755a;
+  }
+
+  .StripeElement--webkit-autofill {
+    background-color: #fefde5 !important;
+  }
+  
+  #card-errors {
+    color: #dc3545;
+    margin-top: 0.5rem;
+    font-size: 0.875em;
+  }
+  
+  #submit-payment {
+    transition: all 0.3s ease;
+  }
+  
+  .payment-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    max-width: 1000px;
+    margin: 0 auto;
+    background: white;
+  }
+  
+  .payment-header {
+    background: linear-gradient(135deg, #6e8efb, #a777e3);
+    color: white;
+    padding: 1.5rem 2rem;
+    text-align: center;
+  }
+  
+  .payment-header h2 {
+    margin: 0;
+    font-weight: 600;
+  }
+  
+  .payment-body {
+    padding: 2.5rem;
+  }
+  
+  .payment-summary {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .course-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #eee;
+    transition: all 0.2s ease;
+  }
+  
+  .course-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    border-radius: 4px;
+  }
+  
+  .course-item:last-child {
+    border-bottom: none;
+  }
+  
+  .total-amount {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid #dee2e6;
+    margin-bottom: 2rem;
+  }
+  
+  .payment-method {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .payment-method::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(120deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+  
+  .payment-method:hover::after {
+    transform: translateX(100%);
+  }
+  
+  .payment-method:hover {
+    border-color: #6e8efb;
+    background-color: #f8f9ff;
+  }
+  
+  .payment-method.active {
+    border-color: #6e8efb;
+    background-color: #f0f4ff;
+  }
+  
+  .payment-method img {
+    height: 30px;
+    margin-right: 1rem;
+  }
+  
+  .payment-form {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+  
+  .form-control {
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    border: 1px solid #ced4da;
+  }
+  
+  .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+  }
+  
+  .form-control.is-valid {
+    border-color: #198754;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+  }
+  
+  .form-control.is-invalid {
+    border-color: #dc3545;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+  }
+  
+  .btn-pay {
+    background: #4CAF50;
+    border: none;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    width: 100%;
+    margin-top: 1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  
+  .btn-pay::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.2);
+    transition: width 0.3s ease;
+    z-index: -1;
+  }
+  
+  .btn-pay:hover::before {
+    width: 100%;
+  }
+  
+  .btn-pay:active {
+    transform: translateY(1px);
+  }
+  
+  .btn-pay:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  .btn-pay .spinner-border {
+    margin-right: 0.5rem;
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+  }
+  
+  .btn-pay:hover {
+    background: #43a047;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+  }
+  
+  .secure-payment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1.5rem;
+    color: #6c757d;
+    font-size: 0.9rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    border: 1px dashed #dee2e6;
+    transition: all 0.3s ease;
+  }
+  
+  .secure-payment:hover {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: #adb5bd;
+  }
+  
+  .secure-payment i {
+    font-size: 1.1rem;
+    margin-right: 0.5rem;
+    color: #28a745;
+  }
+  
+  .secure-payment i {
+    color: #4CAF50;
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+  }
+  
+  @media (max-width: 768px) {
+    .payment-container {
+      padding: 1rem;
+    }
+    
+    .payment-body {
+      padding: 1.5rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-container">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12">
+        <div class="payment-card">
+          <!-- Header -->
+          <div class="payment-header">
+            <h2>Complete Your Purchase</h2>
+            <p class="mb-0">Securely complete your payment</p>
+          </div>
+          
+          <div class="payment-body">
+            <div class="row">
+              <!-- Order Summary -->
+              <div class="col-lg-5 mb-4">
+                <h5 class="mb-3">Order Summary</h5>
+                <div class="payment-summary">
+                  {% if course %}
+                  <div class="course-item">
+                    <span>{{ course.title }}</span>
+                    <span>₹{{ course.price|floatformat:2 }}</span>
+                  </div>
+                  {% if course.discount_price %}
+                  <div class="course-item">
+                    <span class="text-success">Discount Applied</span>
+                    <span>-₹{{ course.get_discount_amount|floatformat:2 }}</span>
+                  </div>
+                  {% endif %}
+                  {% else %}
+                  <div class="course-item">
+                    <span>No course selected</span>
+                    <span>₹0.00</span>
+                  </div>
+                  {% endif %}
+                  <div class="total-amount text-end">
+                    {% if course %}
+                      {% if course.discount_price %}
+                        <span class="text-muted text-decoration-line-through me-2">₹{{ course.price|floatformat:2 }}</span>
+                        <span>Total: ₹{{ course.discount_price|floatformat:2 }}</span>
+                      {% else %}
+                        <span>Total: ₹{{ course.price|floatformat:2 }}</span>
+                      {% endif %}
+                    {% else %}
+                      <span>Total: ₹0.00</span>
+                    {% endif %}
+                  </div>
+                </div>
+                
+                <div class="secure-payment">
+                  <i class="bi bi-shield-lock"></i>
+                  <span>Secure SSL Encryption</span>
+                </div>
+              </div>
+              
+              <!-- Payment Form -->
+              <div class="col-lg-7">
+                <h5 class="mb-3">Payment Method</h5>
+                
+                <!-- Payment Methods Selection -->
+                <div class="payment-methods mb-4">
+                    <h5 class="mb-3">Select Payment Method</h5>
+                    <div class="payment-options">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="payment-method" id="credit-card" checked>
+                            <label class="form-check-label" for="credit-card">
+                                <i class="bi bi-credit-card"></i> Credit/Debit Card
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="payment-method" id="paypal">
+                            <label class="form-check-label" for="paypal">
+                                <i class="bi bi-paypal"></i> PayPal
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment-method" id="upi">
+                            <label class="form-check-label" for="upi">
+                                <i class="bi bi-phone"></i> UPI
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Form -->
+                <form id="payment-form" class="mt-4">
+                    <!-- Include the client secret as a data attribute -->
+                    <div id="payment-data" data-client-secret="{{ client_secret }}"></div>
+                    
+                    <!-- Card Payment Section -->
+                    <div id="card-payment-section">
+                        <div class="test-card-info mb-4 p-3 bg-light rounded">
+                            <h6 class="mb-2">Test Card (For Development Only)</h6>
+                            <div class="small text-muted mb-2">Use any future date and any 3-digit CVC</div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-success test-card" data-card="4242424242424242">
+                                    4242 4242 4242 4242 (Success)
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-info test-card" data-card="4000002500003155">
+                                    4000 0025 0000 3155 (3D Secure)
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-warning test-card" data-card="4000000000009995">
+                                    4000 0000 0000 9995 (Insufficient)
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger test-card" data-card="4000000000000002">
+                                    4000 0000 0000 0002 (Declined)
+                                </button>
+                            </div>
+                            <div class="small text-muted mt-2">
+                                <div>Expiry: Any future date (e.g., 12/30)</div>
+                                <div>CVC: Any 3 digits (e.g., 123)</div>
+                                <div>ZIP: Any 5 digits (e.g., 12345)</div>
+                            </div>
+                            <div class="selected-card mt-2 text-success small"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Card Information</label>
+                            <div id="card-element" class="form-control p-2">
+                                <!-- A Stripe Element will be inserted here. -->
+                            </div>
+                            <!-- Used to display form errors. -->
+                            <div id="card-errors" class="text-danger mt-2" role="alert"></div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button id="submit-payment" class="btn btn-primary btn-lg" type="submit">
+                                Pay ₹{{ course.discount_price|default:course.price|floatformat:2 }}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- UPI Payment Section -->
+                    <div id="upi-payment-section" class="d-none">
+                        <div class="mb-3">
+                            <label for="upi-id" class="form-label">Enter UPI ID</label>
+                            <input type="text" class="form-control" id="upi-id" placeholder="yourname@upi">
+                            <div class="form-text">Enter your UPI ID (e.g., yourname@upi)</div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="button" id="pay-with-upi" class="btn btn-primary btn-lg">
+                                Pay with UPI
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- PayPal Button Container -->
+                    <div id="paypal-button-container" class="d-none"></div>
+                </form>
+                
+                <div class="mt-4 text-center">
+                  <div class="secure-payment">
+                    <i class="bi bi-lock-fill me-2"></i>
+                    <span>Secure Payment</span>
+                    <img src="{% static 'images/powered-by-stripe.png' %}" alt="Powered by Stripe" class="ms-2" style="height: 24px;">
+                  </div>
+                </div>
+                
+                <!-- Payment Methods (Hidden for now) -->
+                <div class="payment-methods d-none">
+                  <div class="payment-method" id="credit-card">
+                    <input type="radio" name="payment-method" id="credit-card-radio" checked>
+                    <img src="https://cdn-icons-png.flaticon.com/512/196/196578.png" alt="Credit Card">
+                    <span>Credit/Debit Card</span>
+                  </div>
+                  
+                  <div class="payment-method" id="paypal">
+                    <input type="radio" name="payment-method" id="paypal-radio">
+                    <img src="https://cdn-icons-png.flaticon.com/512/196/196566.png" alt="PayPal">
+                    <span>PayPal</span>
+                  </div>
+                  
+                  <div class="payment-method" id="upi">
+                    <input type="radio" name="payment-method" id="upi-radio">
+                    <img src="https://cdn-icons-png.flaticon.com/512/196/196561.png" alt="UPI">
+                    <span>UPI Payment</span>
+                  </div>
+                </div>
+                
+                <!-- Credit Card Form (Default Visible) -->
+                <div class="payment-form" id="credit-card-form">
+                  <form id="payment-form">
+                    <div class="mb-3">
+                      <label for="card-element" class="form-label">Card Information</label>
+                      <div id="card-element" class="form-control p-2">
+                        <!-- Stripe Elements will be inserted here -->
+                      </div>
+                      <div id="card-errors" role="alert"></div>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="cardholder-name" class="form-label">Name on Card</label>
+                      <input type="text" class="form-control" id="cardholder-name" placeholder="John Doe" required>
+                      <div class="invalid-feedback">Please enter the name on your card</div>
+                    </div>
+
+                    <div class="d-grid">
+                      <button type="submit" class="btn btn-primary btn-lg" id="submit-payment">
+                        <span class="spinner-border spinner-border-sm d-none" id="spinner" role="status" aria-hidden="true"></span>
+                        <span id="button-text">Pay ₹{{ course.price|floatformat:2 }}</span>
+                      </button>
+                    </div>
+                    
+                    <!-- Hidden field for course ID -->
+                    <input type="hidden" id="course-id" value="{{ course.id }}">
+                  </form>
+                </div>
+                
+                <!-- PayPal Form (Hidden by default) -->
+                <div class="payment-form d-none" id="paypal-form">
+                  <div class="text-center py-4">
+                    <p>You will be redirected to PayPal to complete your payment</p>
+                    <button class="btn btn-primary btn-pay" onclick="processPayPal()">
+                      <i class="bi bi-paypal me-2"></i>Pay with PayPal
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- UPI Form (Hidden by default) -->
+                <div class="payment-form d-none" id="upi-form">
+                  <div class="mb-3">
+                    <label class="form-label">Select UPI App</label>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                      <button type="button" class="btn btn-outline-primary upi-app">
+                        <img src="https://cdn-icons-png.flaticon.com/512/196/196581.png" alt="GPay" style="height: 30px;">
+                      </button>
+                      <button type="button" class="btn btn-outline-primary upi-app">
+                        <img src="https://cdn-icons-png.flaticon.com/512/196/196561.png" alt="PhonePe" style="height: 30px;">
+                      </button>
+                      <button type="button" class="btn btn-outline-primary upi-app">
+                        <img src="https://cdn-icons-png.flaticon.com/512/196/196566.png" alt="Paytm" style="height: 30px;">
+                      </button>
+                      <button type="button" class="btn btn-outline-primary upi-app">
+                        <img src="https://cdn-icons-png.flaticon.com/512/196/196578.png" alt="BHIM" style="height: 30px;">
+                      </button>
+                    </div>
+                    
+                    <div class="mb-3">
+                      <label for="upi-id" class="form-label">Or Enter UPI ID</label>
+                      <div class="input-group">
+                        <input type="text" class="form-control form-control-lg" id="upi-id" placeholder="yourname@upi">
+                        <button class="btn btn-primary" type="button" onclick="processUPI()">Pay Now</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<!-- Load jQuery first if not already loaded -->
+{% if not 'jquery' in block.super %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+{% endif %}
+<!-- Then load Stripe -->
+<script src="https://js.stripe.com/v3/"></script>
+<!-- Load PayPal SDK -->
+<script src="https://www.paypal.com/sdk/js?client-id={{ PAYPAL_CLIENT_ID|default:'test' }}&currency=USD"></script>
+
+<script>
+// Payment processing module
+const PaymentProcessor = (function() {
+    'use strict';
+    
+    // Private variables
+    let stripe = null;
+    let elements = null;
+    let card = null;
+    const stripePublicKey = '{{ STRIPE_PUBLIC_KEY|default:"" }}';
+    
+    // Initialize Stripe
+    function initializeStripe() {
+        if (!stripePublicKey) {
+            console.error('Stripe public key is missing!');
+            showError('Payment processing is currently unavailable. Please try again later.');
+            return false;
+        }
+        
+        if (window.Stripe) {
+            stripe = Stripe(stripePublicKey);
+            return true;
+        } else {
+            console.error('Stripe.js failed to load properly');
+            showError('Payment processing is currently unavailable. Please try again later.');
+            return false;
+        }
+    }
+    
+    // Initialize elements
+    function initializeElements() {
+        if (!stripe) return false;
+        
+        // Initialize Stripe Elements
+        elements = stripe.elements();
+        
+        // Create card element
+        const style = {
+            base: {
+                color: '#32325d',
+                fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+                fontSmoothing: 'antialiased',
+                fontSize: '16px',
+                '::placeholder': {
+                    color: '#aab7c4'
+                }
+            },
+            invalid: {
+                color: '#fa755a',
+                iconColor: '#fa755a'
+            }
+        };
+        
+        // Create an instance of the card Element
+        card = elements.create('card', { style: style });
+        
+        // Add an instance of the card Element into the `card-element` <div>
+        const cardElement = document.getElementById('card-element');
+        if (cardElement) {
+            card.mount('#card-element');
+            
+            // Handle real-time validation errors from the card Element
+            card.on('change', function(event) {
+                const displayError = document.getElementById('card-errors');
+                if (event.error) {
+                    displayError.textContent = event.error.message;
+                    displayError.style.display = 'block';
+                } else {
+                    displayError.textContent = '';
+                    displayError.style.display = 'none';
+                }
+            });
+        }
+        
+        return true;
+    }
+    
+    // Public API
+    return {
+        init: function() {
+            if (initializeStripe()) {
+                initializeElements();
+            }
+        },
+        getStripe: function() {
+            return stripe;
+        },
+        getElements: function() {
+            return elements;
+        },
+        getCard: function() {
+            return card;
+        }
+    };
+})();
+
+// Initialize the payment processor when the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    PaymentProcessor.init();
+});
+
+// Show error message
+function showError(message) {
+    const errorElement = $('#card-errors');
+    if (errorElement.length) {
+        errorElement.text(message).show();
+        
+        // Scroll to error message
+        $('html, body').animate({
+            scrollTop: errorElement.offset().top - 100
+        }, 500);
+    } else {
+        console.error('Error message could not be displayed:', message);
+    }
+}
+
+// Initialize payment methods
+function initializePaymentMethods() {
+    // Card element setup
+    const style = {
+        base: {
+            color: '#32325d',
+            fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+            fontSmoothing: 'antialiased',
+            fontSize: '16px',
+            '::placeholder': {
+                color: '#aab7c4'
+            }
+        },
+        invalid: {
+            color: '#fa755a',
+            iconColor: '#fa755a'
+        }
+    };
+
+    // Create card element if it doesn't exist
+    if (!card && elements) {
+        card = elements.create('card', { style: style });
+        card.mount('#card-element');
+
+        // Handle real-time validation errors from the card Element
+        card.on('change', function(event) {
+            const displayError = document.getElementById('card-errors');
+            if (event.error) {
+                displayError.textContent = event.error.message;
+                displayError.style.display = 'block';
+            } else {
+                displayError.textContent = '';
+                displayError.style.display = 'none';
+            }
+        });
+    }
+}
+
+// Initialize payment method selection
+function initializePaymentMethodSelection() {
+    $('input[name="payment-method"]').change(function() {
+        const method = $(this).attr('id');
+        
+        // Hide all sections first
+        $('#card-payment-section, #upi-payment-section, #paypal-button-container')
+            .addClass('d-none');
+        
+        // Show selected method
+        if (method === 'credit-card') {
+            $('#card-payment-section').removeClass('d-none');
+        } else if (method === 'upi') {
+            $('#upi-payment-section').removeClass('d-none');
+        } else if (method === 'paypal') {
+            $('#paypal-button-container').removeClass('d-none');
+            initializePayPal();
+        }
+    });
+    
+    // Trigger change event to show default selected method
+    $('input[name="payment-method"]:checked').trigger('change');
+}
+
+// Handle card payment
+async function handleCardPayment() {
+    if (!stripe || !elements) {
+        throw new Error('Payment processor is not properly initialized.');
+    }
+    
+    const clientSecret = document.getElementById('payment-data')?.dataset.clientSecret;
+    if (!clientSecret) {
+        throw new Error('Unable to process payment. Please try again.');
+    }
+    
+    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+            card: card,
+            billing_details: {
+                name: $('#cardholder-name').val()
+            }
+        }
+    });
+    
+    if (error) {
+        throw new Error(error.message || 'Payment failed. Please check your card details and try again.');
+    }
+    
+    if (paymentIntent.status === 'succeeded') {
+        // Redirect to success page or show success message
+        window.location.href = '{% url "payment_success" %}';
+    }
+}
+
+// Handle UPI payment
+async function handleUPIPayment() {
+    const upiId = $('#upi-id').val().trim();
+    
+    if (!upiId) {
+        throw new Error('Please enter a valid UPI ID');
+    }
+    
+    // Basic UPI ID validation
+    const upiRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/;
+    if (!upiRegex.test(upiId)) {
+        throw new Error('Please enter a valid UPI ID (e.g., yourname@upi)');
+    }
+    
+    // Here you would typically make an AJAX call to your backend to process the UPI payment
+    const response = await fetch('{% url "courseplatform:create_upi_payment" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            upi_id: upiId,
+            amount: '{{ course.price }}',
+            currency: 'INR',
+            description: 'Payment for {{ course.title }}',
+            course_id: '{{ course.id }}'
+        })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+        throw new Error(data.error || 'Failed to process UPI payment');
+    }
+    
+    // Redirect to success page or show success message
+    window.location.href = '{% url "payment_success" %}';
+}
+
+// Initialize PayPal
+function initializePayPal() {
+    if (typeof paypal === 'undefined') {
+        console.error('PayPal SDK not loaded');
+        return;
+    }
+    
+    // Clear any existing buttons
+    $('#paypal-button-container').empty();
+    
+    paypal.Buttons({
+        createOrder: function(data, actions) {
+            return actions.order.create({
+                purchase_units: [{
+                    amount: {
+                        value: '{{ course.price }}',
+                        currency_code: 'USD'
+                    },
+                    description: 'Payment for {{ course.title }}',
+                    custom_id: '{{ course.id }}'
+                }]
+            });
+        },
+        onApprove: function(data, actions) {
+            return actions.order.capture().then(function(details) {
+                // Redirect to success page after successful payment
+                window.location.href = '{% url "payment_success" %}';
+            });
+        },
+        onError: function(err) {
+            console.error('PayPal Error:', err);
+            showError('An error occurred with PayPal. Please try another payment method.');
+        }
+    }).render('#paypal-button-container');
+}
+
+// Handle form submission
+async function handleFormSubmit(event) {
+    event.preventDefault();
+    
+    const submitButton = $('#submit-payment');
+    const originalText = submitButton.html();
+    
+    // Disable the submit button to prevent double submission
+    submitButton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...');
+    
+    try {
+        const selectedMethod = $('input[name="payment-method"]:checked').attr('id');
+        
+        if (selectedMethod === 'credit-card') {
+            await handleCardPayment();
+        } else if (selectedMethod === 'upi') {
+            await handleUPIPayment();
+        } else if (selectedMethod === 'paypal') {
+            // PayPal handles its own submission
+            return;
+        }
+    } catch (error) {
+        console.error('Payment Error:', error);
+        showError(error.message || 'An error occurred while processing your payment.');
+    } finally {
+        submitButton.prop('disabled', false).html(originalText);
+    }
+}
+
+    // Initialize payment when DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get form element once
+        const form = document.getElementById('payment-form');
+        
+        // Check if Stripe is available
+        if (typeof Stripe === 'undefined') {
+            showError('Payment processing is currently unavailable. Please try again later.');
+            return;
+        }
+
+        // Get Stripe public key from template variable
+        const stripePublicKey = "{{ STRIPE_PUBLIC_KEY|default:'' }}";
+        if (!stripePublicKey) {
+            showError('Payment processing is not properly configured. Please contact support.');
+            return;
+        }
+
+        try {
+            // Initialize Stripe and elements
+            const stripe = Stripe(stripePublicKey);
+            const elements = stripe.elements();
+            
+            // Initialize payment methods and UI
+            initializePaymentMethods();
+            initializePaymentMethodSelection();
+            
+            // Set up form submission
+            if (form) {
+                form.addEventListener('submit', handleFormSubmit);
+            }
+            
+            // Set up UPI app selection
+            document.querySelectorAll('.upi-app').forEach(app => {
+                app.addEventListener('click', function() {
+                    // In a real app, this would open the selected UPI app
+                    const appName = this.querySelector('img').alt;
+                    console.log(`Opening ${appName} for UPI payment...`);
+                    // You would typically handle the UPI deep link here
+                });
+            });
+            
+        } catch (error) {
+            console.error('Error initializing payment:', error);
+            showError('Failed to initialize payment processor. Please try again later.');
+        }
+});
+</script>
+<style>
+/* Payment Methods Styling */
+.payment-methods {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.payment-options .form-check {
+    padding: 0.75rem 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+}
+
+.payment-options .form-check:hover {
+    border-color: #6c757d;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.payment-options .form-check-input {
+    margin-top: 0.3em;
+    width: 1.2em;
+    height: 1.2em;
+}
+
+.payment-options .form-check-label {
+    margin-left: 0.75rem;
+    font-size: 1.05rem;
+    font-weight: 500;
+}
+
+.payment-options .bi {
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+}
+
+/* Test Card Styling */
+.test-card-info {
+    border-left: 4px solid #4CAF50;
+    margin-bottom: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.25rem;
+}
+
+.test-card {
+    font-family: monospace;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+    margin-bottom: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.test-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.test-card:active {
+    transform: translateY(0);
+}
+
+.selected-card {
+    font-weight: 500;
+    margin-top: 0.75rem;
+    padding: 0.5rem;
+    background: #e8f5e9;
+    border-radius: 4px;
+    border-left: 3px solid #4CAF50;
+}
+
+/* UPI Styling */
+#upi-payment-section {
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .payment-options .form-check {
+        padding: 0.6rem 0.8rem;
+    }
+    
+    .payment-options .form-check-label {
+        font-size: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Load jQuery first if not already loaded -->
+{% if not 'jquery' in block.super %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+{% endif %}
+<!-- Then load Stripe -->
+<script src="https://js.stripe.com/v3/"></script>
+<script src="https://www.paypal.com/sdk/js?client-id={{ PAYPAL_CLIENT_ID|default:'test' }}&currency=USD"></script>
+
+<script>
+// Payment module to avoid global scope pollution
+const PaymentModule = (function() {
+    // Private variables
+    let stripe = null;
+    let elements = null;
+    let card = null;
+    
+    // DOM Elements
+    const dom = {
+        form: null,
+        submitButton: null,
+        errorElement: null,
+        cardNumber: null,
+        expiryDate: null,
+        cvv: null,
+        cardTypeIcon: null
+    };
+    
+    // Card type patterns
+    const cardTypes = {
+        visa: /^4/,
+        mastercard: /^5[1-5]/,
+        amex: /^3[47]/,
+        discover: /^6(?:011|5)/
+    };
+    
+    // Initialize the payment module
+    function init() {
+        cacheDomElements();
+        if (checkDependencies()) {
+            initializeStripe();
+            setupEventListeners();
+            initializePaymentMethods();
+            initializePaymentMethodSelection();
+        }
+    }
+    
+    // Cache DOM elements
+    function cacheDomElements() {
+        dom.form = document.getElementById('payment-form');
+        dom.submitButton = document.getElementById('submit-payment');
+        dom.errorElement = document.getElementById('card-errors');
+        dom.cardNumber = document.getElementById('card-number');
+        dom.expiryDate = document.getElementById('expiry-date');
+        dom.cvv = document.getElementById('cvv');
+        dom.cardTypeIcon = document.getElementById('card-type');
+    }
+    
+    // Check for required dependencies
+    function checkDependencies() {
+        if (typeof $ === 'undefined') {
+            showError('jQuery is not loaded properly');
+            return false;
+        }
+        
+        if (typeof Stripe === 'undefined') {
+            showError('Stripe.js is not loaded properly');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Initialize Stripe
+    function initializeStripe() {
+        const clientSecret = document.getElementById('payment-data')?.dataset.clientSecret;
+        if (!clientSecret) {
+            showError('Payment processing is not properly configured.');
+            return;
+        }
+        
+        stripe = Stripe('{{ STRIPE_PUBLIC_KEY }}');
+        elements = stripe.elements();
+        
+        const style = {
+            base: {
+                color: '#32325d',
+                fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+                fontSmoothing: 'antialiased',
+                fontSize: '16px',
+                '::placeholder': {
+                    color: '#aab7c4'
+                }
+            },
+            invalid: {
+                color: '#fa755a',
+                iconColor: '#fa755a'
+            }
+        };
+        
+        // Create card element
+        card = elements.create('card', { style: style });
+        
+        // Mount card element
+        const cardElement = document.getElementById('card-element');
+        if (cardElement) {
+            card.mount('#card-element');
+            
+            // Handle real-time validation errors from the card Element
+            card.on('change', function(event) {
+                const displayError = document.getElementById('card-errors');
+                if (event.error) {
+                    displayError.textContent = event.error.message;
+                    displayError.style.display = 'block';
+                } else {
+                    displayError.textContent = '';
+                    displayError.style.display = 'none';
+                }
+            });
+        }
+    }
+    
+    // Set up event listeners
+    function setupEventListeners() {
+        if (dom.form) {
+            dom.form.addEventListener('submit', handleFormSubmit);
+        }
+        
+        if (dom.cardNumber) {
+            dom.cardNumber.addEventListener('input', handleCardNumberInput);
+        }
+        
+        if (dom.expiryDate) {
+            dom.expiryDate.addEventListener('input', handleExpiryDateInput);
+        }
+    }
+    
+    // Handle card number input
+    function handleCardNumberInput(e) {
+        let value = e.target.value.replace(/\s+/g, '');
+        if (value.length > 0) {
+            value = value.match(new RegExp('.{1,4}', 'g')).join(' ');
+        }
+        e.target.value = value;
+        
+        // Update card type icon
+        const cardType = detectCardType(value.replace(/\s+/g, ''));
+        if (dom.cardTypeIcon) {
+            dom.cardTypeIcon.className = 'card-type-icon ' + cardType;
+        }
+    }
+    
+    // Handle expiry date input
+    function handleExpiryDateInput(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length >= 2) {
+            value = value.substring(0, 2) + '/' + value.substring(2, 4);
+            
+            // Validate month
+            const month = parseInt(value.substring(0, 2), 10);
+            if (month < 1 || month > 12) {
+                e.target.classList.add('is-invalid');
+                e.target.classList.remove('is-valid');
+            } else {
+                e.target.classList.remove('is-invalid');
+                e.target.classList.add('is-valid');
+            }
+        }
+        e.target.value = value;
+    }
+    
+    // Detect card type based on number
+    function detectCardType(number) {
+        for (const [type, pattern] of Object.entries(cardTypes)) {
+            if (pattern.test(number)) {
+                return type;
+            }
+        }
+        return '';
+    }
+    
+    // Show error message
+    function showError(message) {
+        const errorElement = document.getElementById('card-errors');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            
+            // Scroll to error message
+            $('html, body').animate({
+                scrollTop: $(errorElement).offset().top - 100
+            }, 500);
+        } else {
+            console.error('Error:', message);
+        }
+    }
+    
+    // Handle form submission
+    async function handleFormSubmit(event) {
+        event.preventDefault();
+        
+        if (!dom.submitButton) return;
+        
+        // Disable the submit button to prevent multiple submissions
+        const originalText = dom.submitButton.innerHTML;
+        dom.submitButton.disabled = true;
+        dom.submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+        
+        try {
+            // Handle payment based on selected method
+            const selectedMethod = document.querySelector('input[name="payment-method"]:checked');
+            
+            if (!selectedMethod) {
+                throw new Error('Please select a payment method');
+            }
+            
+            switch (selectedMethod.id) {
+                case 'credit-card-radio':
+                    await handleCardPayment();
+                    break;
+                case 'paypal-radio':
+                    await handlePayPalPayment();
+                    break;
+                case 'upi-radio':
+                    await handleUPIPayment();
+                    break;
+                default:
+                    throw new Error('Invalid payment method selected');
+            }
+        } catch (error) {
+            showError(error.message || 'An error occurred while processing your payment.');
+        } finally {
+            if (dom.submitButton) {
+                dom.submitButton.disabled = false;
+                dom.submitButton.innerHTML = originalText;
+            }
+        }
+    }
+    
+    // Handle card payment
+    async function handleCardPayment() {
+        if (!stripe || !elements) {
+            throw new Error('Payment processor not initialized');
+        }
+        
+        const { error, paymentMethod } = await stripe.createPaymentMethod({
+            type: 'card',
+            card: card,
+        });
+        
+        if (error) {
+            throw new Error(error.message);
+        }
+        
+        // Submit the form with the payment method ID
+        const form = document.getElementById('payment-form');
+        const hiddenInput = document.createElement('input');
+        hiddenInput.setAttribute('type', 'hidden');
+        hiddenInput.setAttribute('name', 'payment_method_id');
+        hiddenInput.setAttribute('value', paymentMethod.id);
+        form.appendChild(hiddenInput);
+        
+        // Submit the form
+        form.submit();
+    }
+    
+    // Handle PayPal payment
+    async function handlePayPalPayment() {
+        // In a real implementation, you would redirect to PayPal or use their JS SDK
+        // This is a placeholder for the PayPal integration
+        return new Promise((resolve, reject) => {
+            // Simulate API call
+            setTimeout(() => {
+                resolve(true);
+            }, 1000);
+        });
+    }
+    
+    // Handle UPI payment
+    async function handleUPIPayment() {
+        // In a real implementation, you would integrate with a UPI payment gateway
+        // This is a placeholder for the UPI integration
+        return new Promise((resolve, reject) => {
+            // Simulate API call
+            setTimeout(() => {
+                resolve(true);
+            }, 1000);
+        });
+    }
+    
+    // Show error message
+    function showError(message) {
+        const errorElement = document.getElementById('card-errors');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            
+            // Auto-hide error after 5 seconds
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        } else {
+            console.error('Payment error:', message);
+            alert(message); // Fallback in case the error element is not found
+        }
+    }
+    
+    // Public API
+    return {
+        init: init
+    };
+})();
+
+// Initialize the payment module when the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    PaymentModule.init();
+});
+</script>
+    // This is a placeholder for the actual implementation
+    const response = await fetch('{% url "courseplatform:create_upi_payment" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            upi_id: upiId,
+            amount: '{{ course.price }}',
+            currency: 'INR',
+            description: 'Payment for {{ course.title }}'
+        })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+        throw new Error(data.error || 'Failed to process UPI payment');
+    }
+    
+    // Redirect to success page or show success message
+    window.location.href = '{% url "payment_success" %}';
+}
+
+// Initialize PayPal
+function initializePayPal() {
+    if (typeof paypal === 'undefined') {
+        console.error('PayPal SDK not loaded');
+        return;
+    }
+    
+    // Clear any existing buttons
+    $('#paypal-button-container').empty();
+    
+    paypal.Buttons({
+        createOrder: function(data, actions) {
+            return actions.order.create({
+                purchase_units: [{
+                    amount: {
+                        value: '{{ course.price }}',
+                        currency_code: 'USD'
+                    },
+                    description: 'Payment for {{ course.title }}'
+                }]
+            });
+        },
+        onApprove: function(data, actions) {
+            return actions.order.capture().then(function(details) {
+                // Redirect to success page after successful payment
+                window.location.href = '{% url "payment_success" %}';
+            });
+        },
+        onError: function(err) {
+            console.error('PayPal Error:', err);
+            showError('An error occurred with PayPal. Please try another payment method.');
+        }
+    }).render('#paypal-button-container');
+}
+
+// Show error message
+function showError(message) {
+    const errorElement = $('#card-errors');
+    if (errorElement.length) {
+        errorElement.text(message).show();
+        return;
+    }
+    
+    // Disable button and show loading
+    submitButton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...');
+    
+    try {
+        const csrfToken = $('[name=csrfmiddlewaretoken]').val();
+        const response = await fetch('{% url 'courseplatform:create_upi_payment %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                upi_id: upiId,
+                amount: parseFloat('{{ course.discount_price|default:course.price|floatformat:2 }}'),
+                currency: 'INR',
+                description: 'Payment for {{ course.title|escapejs }}',
+                course_id: '{{ course.id }}'
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.payment_url) {
+            // Redirect to UPI payment URL
+            window.location.href = data.payment_url;
+        } else {
+            throw new Error(data.error || 'Failed to initiate UPI payment');
+        }
+    } catch (error) {
+        console.error('UPI Payment Error:', error);
+        showError(error.message || 'An error occurred while processing your UPI payment. Please try again.');
+    } finally {
+        submitButton.prop('disabled', false).html(originalText);
+    }
+}
+
+// Handle form submission
+async function handleFormSubmit(event) {
+    event.preventDefault();
+    
+    const submitButton = $('#submit-payment');
+    const originalText = submitButton.html();
+    
+    // Disable button and show loading
+    submitButton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...');
+    
+    try {
+        const { paymentIntent, error } = await stripe.confirmCardPayment(
+            document.getElementById('payment-data').dataset.clientSecret,
+            {
+                payment_method: {
+                    card: card,
+                    billing_details: {
+                        name: '{{ request.user.get_full_name|default:request.user.username|escapejs }}',
+                        email: '{{ request.user.email|escapejs }}',
+                    }
+                }
+            }
+        );
+        
+        if (error) {
+            showError(error.message);
+        } else if (paymentIntent.status === 'succeeded') {
+            // Redirect to success page
+            window.location.href = '{% url "payment_success" %}?payment_intent=' + paymentIntent.id;
+        }
+    } catch (error) {
+        console.error('Payment Error:', error);
+        showError('An error occurred while processing your payment.');
+    } finally {
+        submitButton.prop('disabled', false).html(originalText);
+    }
+}
+
+    // Helper function to show error messages
+    function showError(message) {
+        const errorElement = $('#card-errors');
+        if (errorElement.length) {
+            errorElement.text(message).show();
+            
+            // Scroll to error message
+            $('html, body').animate({
+                scrollTop: errorElement.offset().top - 100
+            }, 500);
+        } else {
+            console.error('Error element not found');
+        }
+    }
+
+    // Initialize Stripe
+    if (typeof Stripe !== 'undefined') {
+        // Get the client secret from the data attribute
+        const clientSecret = document.getElementById('payment-data')?.dataset.clientSecret;
+        if (!clientSecret) {
+            console.error('Stripe client secret is missing');
+            return;
+        }
+
+        // Initialize Stripe with your publishable key
+        stripe = Stripe('{{ STRIPE_PUBLIC_KEY }}');
+        
+        // Create an Elements instance
+        elements = stripe.elements();
+        
+        // Create card element
+        const style = {
+            base: {
+                color: '#32325d',
+                fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+                fontSmoothing: 'antialiased',
+                fontSize: '16px',
+                '::placeholder': {
+                    color: '#aab7c4'
+                }
+            },
+            invalid: {
+                color: '#fa755a',
+                iconColor: '#fa755a'
+            }
+        };
+
+        // Create an instance of the card Element
+        card = elements.create('card', {style: style});
+        
+        // Add an instance of the card Element into the `card-element` <div>
+        const cardElement = document.getElementById('card-element');
+        if (cardElement) {
+            card.mount('#card-element');
+        }
+        
+        // Handle real-time validation errors from the card Element
+        card.on('change', function(event) {
+            const displayError = document.getElementById('card-errors');
+            if (event.error) {
+                displayError.textContent = event.error.message;
+            } else {
+                displayError.textContent = '';
+            }
+        });
+    }
+
+    // Initialize Stripe with your public key
+    const stripePublicKey = '{{ STRIPE_PUBLIC_KEY|default:'' }}';
+    if (!stripePublicKey) {
+        showError('Payment processing is not properly configured. Please contact support.');
+        return;
+    }
+
+    // Initialize Stripe
+    const stripe = Stripe(stripePublicKey);
+    const elements = stripe.elements();
+
+    // Get the client secret from the data attribute
+    const paymentDataElement = document.getElementById('payment-data');
+    if (!paymentDataElement) {
+        showError('Payment data not found. Please refresh the page and try again.');
+        return;
+    }
+
+    // Style the card element
+    const style = {
+        base: {
+            color: '#32325d',
+            fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+            fontSmoothing: 'antialiased',
+            fontSize: '16px',
+            '::placeholder': {
+                color: '#aab7c4'
+            }
+        },
+        invalid: {
+            color: '#fa755a',
+            iconColor: '#fa755a'
+        }
+    };
+
+    // Create an instance of the card Element
+    const card = elements.create('card', {style: style});
+
+    // Add an instance of the card Element into the `card-element` <div>
+    card.mount('#card-element');
+
+    // Handle real-time validation errors from the card Element
+  card.on('change', function(event) {
+    const displayError = document.getElementById('card-errors');
+    if (event.error) {
+      displayError.textContent = event.error.message;
+      displayError.style.display = 'block';
+    } else {
+      displayError.textContent = '';
+      displayError.style.display = 'none';
+    }
+  });
+
+  // Handle form submission
+  const form = document.getElementById('payment-form');
+  if (form) {
+    form.addEventListener('submit', async function(event) {
+      event.preventDefault();
+      
+      const submitButton = document.getElementById('submit-payment');
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+      }
+      
+      const clientSecret = paymentDataElement ? paymentDataElement.dataset.clientSecret : null;
+      if (!clientSecret) {
+        console.error('No client secret found');
+        const errorElement = document.getElementById('card-errors');
+        if (errorElement) {
+          errorElement.textContent = 'Payment processing is not available. Please try again later.';
+          errorElement.style.display = 'block';
+        }
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.innerHTML = 'Pay ₹{{ course.discount_price|default:course.price|floatformat:2 }}';
+        }
+        return;
+      }
+      
+      try {
+        // Confirm the card payment
+        const {error, paymentIntent} = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: {
+            card: card,
+            billing_details: {
+              name: '{{ request.user.get_full_name|default:request.user.username|escapejs }}',
+              email: '{{ request.user.email|escapejs }}',
+            }
+          }
+        });
+        
+        if (error) {
+          // Show error to your customer
+          const errorElement = document.getElementById('card-errors');
+          if (errorElement) {
+            errorElement.textContent = error.message || 'An error occurred while processing your payment.';
+            errorElement.style.display = 'block';
+          }
+          
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Pay ₹{{ course.discount_price|default:course.price|floatformat:2 }}';
+          }
+        } else if (paymentIntent.status === 'succeeded') {
+          // The payment has been processed successfully
+          // Redirect to success page or show success message
+          window.location.href = '{% url "courseplatform:payment_success" %}?payment_intent=' + paymentIntent.id;
+        }
+      } catch (err) {
+        console.error('Payment error:', err);
+        const errorElement = document.getElementById('card-errors');
+        if (errorElement) {
+          errorElement.textContent = 'An unexpected error occurred. Please try again.';
+          errorElement.style.display = 'block';
+        }
+        
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.innerHTML = 'Pay ₹{{ course.discount_price|default:course.price|floatformat:2 }}';
+        }
+      }
+    });
+  }
+    return;
+  }
+  
+  const stripe = Stripe(stripePublicKey);
+  const elements = stripe.elements();
+  
+  // Style the card element
+      fontSize: '16px',
+      '::placeholder': {
+        color: '#aab7c4'
+      }
+    },
+    invalid: {
+      color: '#fa755a',
+      iconColor: '#fa755a'
+    }
+  };
+  
+  // Create an instance of the card Element
+  const card = elements.create('card', {style: style});
+  
+  // Add an instance of the card Element into the `card-element` <div>
+  card.mount('#card-element');
+  
+  // Handle real-time validation errors from the card Element
+  card.on('change', function(event) {
+    const displayError = document.getElementById('card-errors');
+    if (event.error) {
+      displayError.textContent = event.error.message;
+      displayError.style.display = 'block';
+    } else {
+      displayError.textContent = '';
+      displayError.style.display = 'none';
+    }
+  });
+  
+  // Handle form submission
+  const form = document.getElementById('payment-form');
+  if (form) {
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+      
+      const submitButton = document.getElementById('submit-payment');
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+      }
+      
+      const clientSecret = '{{ client_secret|default:'' }}';
+      if (!clientSecret) {
+        console.error('No client secret found');
+        const errorElement = document.getElementById('card-errors');
+        if (errorElement) {
+          errorElement.textContent = 'Payment processing is not available. Please try again later.';
+          errorElement.style.display = 'block';
+        }
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.innerHTML = 'Pay ₹{{ course.discount_price|default:course.price|floatformat:2 }}';
+        }
+        return;
+      }
+      
+      // Confirm the card payment
+      stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: card,
+          billing_details: {
+            name: '{{ request.user.get_full_name|default:request.user.username|escapejs }}',
+            email: '{{ request.user.email|escapejs }}',
+          }
+        }
+      }).then(function(result) {
+        if (result.error) {
+          // Show error to your customer
+          const errorElement = document.getElementById('card-errors');
+          if (errorElement) {
+            errorElement.textContent = result.error.message || 'An error occurred while processing your payment.';
+            errorElement.style.display = 'block';
+          }
+          
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Pay ₹{{ course.discount_price|default:course.price|floatformat:2 }}';
+          }
+        } else {
+          // The payment has been processed!
+          if (result.paymentIntent.status === 'succeeded') {
+            // Redirect to success page or show success message
+            window.location.href = '{% url "courseplatform:payment_success" %}?payment_intent=' + result.paymentIntent.id;
+          }
+        }
+      });
+    });
+  }
+  
+  const clientSecret = paymentDataElement.dataset.clientSecret;
+  if (!clientSecret) {
+    console.error('Client secret is missing!');
+    return;
+  }
+  
+  // Define the style for the card element
+  const style = {
+    base: {
+      fontSize: '16px',
+      color: '#32325d',
+      '::placeholder': {
+        color: '#aab7c4'
+      }
+    },
+    invalid: {
+      color: '#fa755a',
+      iconColor: '#fa755a'
+    }
+  };
+  
+  // Create an instance of the card Element
+  const card = elements.create('card', {style: style});
+  
+  // Add an instance of the card Element into the `card-element` <div>
+  card.mount('#card-element');
+  
+  // Handle real-time validation errors from the card Element
+  card.on('change', function(event) {
+    const displayError = document.getElementById('card-errors');
+    if (event.error) {
+      displayError.textContent = event.error.message;
+      displayError.style.display = 'block';
+    } else {
+      displayError.textContent = '';
+      displayError.style.display = 'none';
+    }
+  });
+  
+  // Handle form submission
+  const form = document.getElementById('payment-form');
+// Handle form submission
+async function handleFormSubmit(event) {
+    event.preventDefault();
+    
+    // Disable the submit button to prevent multiple submissions
+      const submitButton = document.getElementById('submit-payment');
+      const errorElement = document.getElementById('card-errors');
+      
+      if (!submitButton || !errorElement) {
+        console.error('Required form elements not found');
+        return;
+      }
+      
+      submitButton.disabled = true;
+      submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+      
+      try {
+        // Confirm the card payment
+        const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: {
+            card: card,
+            billing_details: {
+              name: '{{ request.user.get_full_name|default:request.user.username }}',
+              email: '{{ request.user.email }}',
+            },
+          },
+        });
+
+        if (error) {
+          // Show error to your customer
+          errorElement.textContent = error.message;
+          errorElement.style.display = 'block';
+          submitButton.disabled = false;
+          submitButton.innerHTML = 'Pay ₹{{ course.discount_price|default:course.price|floatformat:2 }}';
+        } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+          // Successful payment
+          window.location.href = '{% url "courseplatform:payment_success" %}?payment_intent=' + paymentIntent.id;
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        if (errorElement) {
+          errorElement.textContent = 'An unexpected error occurred. Please try again.';
+          errorElement.style.display = 'block';
+        }
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.innerHTML = 'Pay ₹{{ course.discount_price|default:course.price|floatformat:2 }}';
+        }
+      }
+    });
+  }
+  
+  // Client secret is already passed from the view
+  const clientSecret = '{{ client_secret|default:'' }}';
+  if (!clientSecret) {
+    console.error('No client secret found');
+    const errorElement = document.getElementById('card-errors');
+    if (errorElement) {
+      errorElement.textContent = 'Payment processing is not available. Please try again later.';
+      errorElement.style.display = 'block';
+    }
+  }
+  
+  // Close the document.ready function
+  }); // End of $(document).ready()
+  
+  // Toggle password visibility for CVV with animation
+  const togglePassword = document.querySelector('.toggle-password');
+  if (togglePassword) {
+    togglePassword.addEventListener('click', function() {
+      const passwordInput = document.querySelector('#cvv');
+      const icon = this.querySelector('i');
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+      } else {
+        passwordInput.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+      }
+      
+      // Trigger reflow for smooth transition
+      void passwordInput.offsetWidth;
+    });
+    
+      // Focus styles are handled by CSS
+  }
+  
+  // Handle payment method selection
+  document.querySelectorAll('.payment-method').forEach(method => {
+    method.addEventListener('click', function() {
+      // Remove active class from all methods
+      document.querySelectorAll('.payment-method').forEach(m => {
+        m.classList.remove('active');
+      });
+      
+      // Add active class to clicked method
+      this.classList.add('active');
+      
+      // Hide all forms
+      document.querySelectorAll('.payment-form').forEach(form => {
+        form.classList.add('d-none');
+      });
+      
+      // Show selected form
+      const formId = this.id + '-form';
+      document.getElementById(formId).classList.remove('d-none');
+      
+      // Check the corresponding radio button
+      const radioId = this.id + '-radio';
+      document.getElementById(radioId).checked = true;
+    });
+  });
+  
+  // Format card number with real-time validation
+    // Format card number
+    document.getElementById('card-number')?.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\s+/g, '');
+        if (value.length > 0) {
+            value = value.match(new RegExp('.{1,4}', 'g')).join(' ');
+        }
+        e.target.value = value;
+        
+        // Update card type icon
+        const cardType = detectCardType(value.replace(/\s+/g, ''));
+        const cardIcon = document.getElementById('card-type');
+        if (cardIcon) {
+            cardIcon.className = 'card-type-icon ' + cardType;
+        }
+      // Basic card type detection
+      const cardType = detectCardType(value.replace(/\s/g, ''));
+      const cardIcon = document.getElementById('card-type-icon');
+      if (cardType) {
+        cardIcon.className = `bi bi-credit-card-${cardType} me-2`;
+        e.target.classList.remove('is-invalid');
+        e.target.classList.add('is-valid');
+      } else {
+        cardIcon.className = 'bi bi-credit-card me-2';
+        e.target.classList.remove('is-valid');
+      }
+    }
+    e.target.value = value;
+  });
+  
+  // Detect card type based on number
+  function detectCardType(number) {
+    const cardTypes = {
+      visa: /^4/,
+      mastercard: /^5[1-5]/,
+      amex: /^3[47]/,
+      discover: /^(6011|65|64[4-9]|622)/
+    };
+    
+    for (const [type, pattern] of Object.entries(cardTypes)) {
+      if (pattern.test(number)) {
+        return type;
+      }
+    }
+    return '';
+  }
+  
+    // Format and validate expiry date
+    document.getElementById('expiry-date')?.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+    // Auto-insert slash after MM
+    if (value.length >= 2) {
+      value = value.substring(0, 2) + '/' + value.substring(2, 4);
+      
+      // Validate month
+      const month = parseInt(value.substring(0, 2), 10);
+      if (month < 1 || month > 12) {
+        e.target.classList.add('is-invalid');
+        e.target.classList.remove('is-valid');
+      } else {
+        e.target.classList.remove('is-invalid');
+        
+        // Basic future date validation
+        if (value.length === 5) {
+          const [mm, yy] = value.split('/');
+          const currentYear = new Date().getFullYear() % 100;
+          const currentMonth = new Date().getMonth() + 1;
+          
+          if (parseInt(yy, 10) < currentYear || 
+              (parseInt(yy, 10) === currentYear && parseInt(mm, 10) < currentMonth)) {
+            e.target.classList.add('is-invalid');
+          } else {
+            e.target.classList.add('is-valid');
+          }
+        }
+      }
+    } else if (value.length === 2) {
+      value += '/';
+    }
+    
+    e.target.value = value;
+  });
+  
+  // Process PayPal payment
+  function processPayPal() {
+    // In a real app, this would redirect to PayPal
+    alert('Redirecting to PayPal...');
+  }
+  
+  // Process UPI payment
+  function processUPI() {
+    const upiId = document.getElementById('upi-id').value;
+    if (!upiId) {
+      alert('Please enter a valid UPI ID');
+      return;
+    }
+    // In a real app, this would initiate a UPI payment
+    alert('Initiating UPI payment for ' + upiId);
+  }
+  
+      // Handle UPI app selection
+    document.querySelectorAll('.upi-app').forEach(app => {
+        app.addEventListener('click', function() {
+            // In a real app, this would open the selected UPI app
+      alert('Opening ' + this.querySelector('img').alt + '...');
+    });
+  });
+  
+  // Form submission
+  document.getElementById('payment-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    // In a real app, this would process the payment
+    alert('Processing payment...');
+    // You would typically call your payment processor's API here
+    // For example, with Stripe: stripe.createToken(card).then(...)
+  });
+</script>
+{% endblock %}
+
+{% endblock %}
