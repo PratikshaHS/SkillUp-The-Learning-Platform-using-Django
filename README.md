@@ -1,4 +1,4 @@
-# Learning Management System (LMS)
+# SkillUp- The Learning Platform Using Django
 
 A comprehensive Django-based Learning Management System for managing students, courses, and educational content with a modern, user-friendly interface.
 
@@ -251,4 +251,4 @@ For questions or issues:
 
 ---
 
-**Built with ❤️ using Django and Bootstrap**
+**Built with ❤️ using Django and Bootstrap by Pratiksha Samant**
