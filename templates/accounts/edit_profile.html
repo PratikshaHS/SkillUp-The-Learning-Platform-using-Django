@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}Edit Profile - Online Course Platform{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-10 col-lg-8">
+    <!-- Header -->
+    <div class="d-flex align-items-center mb-4">
+      <a href="{% url 'profile' %}" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h1 class="h3 mb-0">Edit Profile</h1>
+        <p class="text-muted mb-0">Update your account information</p>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-lg">
+      <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-person-gear fs-4 me-3"></i>
+          <div>
+            <h5 class="mb-0">Profile Settings</h5>
+            <small class="opacity-75">Manage your personal information</small>
+          </div>
+        </div>
+      </div>
+      <div class="card-body p-4">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          
+          <div class="row g-4">
+            <div class="col-md-6">
+              <label for="{{ form.first_name.id_for_label }}" class="form-label fw-semibold">
+                <i class="bi bi-person me-2 text-primary"></i>First Name
+              </label>
+              {{ form.first_name }}
+              {% if form.first_name.errors %}
+                <div class="text-danger small mt-1">{{ form.first_name.errors }}</div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label for="{{ form.last_name.id_for_label }}" class="form-label fw-semibold">
+                <i class="bi bi-person me-2 text-primary"></i>Last Name
+              </label>
+              {{ form.last_name }}
+              {% if form.last_name.errors %}
+                <div class="text-danger small mt-1">{{ form.last_name.errors }}</div>
+              {% endif %}
+            </div>
+            
+            <div class="col-12">
+              <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">
+                <i class="bi bi-envelope me-2 text-primary"></i>Email Address
+              </label>
+              {{ form.email }}
+              {% if form.email.errors %}
+                <div class="text-danger small mt-1">{{ form.email.errors }}</div>
+              {% endif %}
+            </div>
+            
+            <div class="col-12">
+              <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold">
+                <i class="bi bi-at me-2 text-primary"></i>Username
+              </label>
+              {{ form.username }}
+              {% if form.username.errors %}
+                <div class="text-danger small mt-1">{{ form.username.errors }}</div>
+              {% endif %}
+              <div class="form-text">
+                <i class="bi bi-info-circle me-1"></i>
+                Your username will be visible to other users
+              </div>
+            </div>
+          </div>
+          
+          <hr class="my-4">
+          
+          <div class="d-flex gap-3 justify-content-end">
+            <a href="{% url 'profile' %}" class="btn btn-outline-secondary btn-lg">
+              <i class="bi bi-x-circle me-2"></i>Cancel
+            </a>
+            <button type="submit" class="btn btn-primary btn-lg">
+              <i class="bi bi-check-circle me-2"></i>Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Additional Settings Card -->
+    <div class="card border-0 shadow mt-4">
+      <div class="card-header bg-light">
+        <h6 class="mb-0">
+          <i class="bi bi-shield-lock me-2 text-warning"></i>Security Settings
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded">
+              <div>
+                <h6 class="mb-1">Password</h6>
+                <small class="text-muted">Last changed: Never</small>
+              </div>
+              <a href="{% url 'password_change' %}" class="btn btn-outline-warning btn-sm">
+                <i class="bi bi-key me-1"></i>Change
+              </a>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded">
+              <div>
+                <h6 class="mb-1">Account Status</h6>
+                <small class="text-success">
+                  <i class="bi bi-check-circle me-1"></i>Active
+                </small>
+              </div>
+              <span class="badge bg-success">Verified</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .form-control, .form-select {
+    border-radius: 0.5rem;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+  }
+  
+  .form-control:focus, .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+  }
+  
+  .card {
+    transition: transform 0.3s ease;
+  }
+  
+  .card:hover {
+    transform: translateY(-2px);
+  }
+</style>
+{% endblock %}

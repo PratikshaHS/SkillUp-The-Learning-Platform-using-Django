@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+  .payment-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 3rem 0;
+  }
+  
+  .payment-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    max-width: 1000px;
+    margin: 0 auto;
+    background: white;
+  }
+  
+  .payment-header {
+    background: linear-gradient(135deg, #6e8efb, #a777e3);
+    color: white;
+    padding: 1.5rem 2rem;
+    text-align: center;
+  }
+  
+  .payment-header h2 {
+    margin: 0;
+    font-weight: 600;
+  }
+  
+  .payment-body {
+    padding: 2.5rem;
+  }
+  
+  .payment-summary {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .course-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #eee;
+    transition: all 0.2s ease;
+  }
+  
+  .course-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    border-radius: 4px;
+  }
+  
+  .course-item:last-child {
+    border-bottom: none;
+  }
+  
+  .total-amount {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid #dee2e6;
+    margin-bottom: 2rem;
+  }
+  
+  .payment-method {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .payment-method::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(120deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+  
+  .payment-method:hover::after {
+    transform: translateX(100%);
+  }
+  
+  .payment-method:hover {
+    border-color: #6e8efb;
+    background-color: #f8f9ff;
+  }
+  
+  .payment-method.active {
+    border-color: #6e8efb;
+    background-color: #f0f4ff;
+  }
+  
+  .payment-method img {
+    height: 30px;
+    margin-right: 1rem;
+  }
+  
+  .payment-form {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+  
+  .form-control {
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    border: 1px solid #ced4da;
+  }
+  
+  .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+  }
+  
+  .btn-pay {
+    background: #4CAF50;
+    border: none;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    width: 100%;
+    margin-top: 1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  
+  .btn-pay:hover {
+    background: #43a047;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+  }
+  
+  .btn-pay:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  .btn-pay .spinner-border {
+    margin-right: 0.5rem;
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+  }
+  
+  .secure-payment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1.5rem;
+    color: #6c757d;
+    font-size: 0.9rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    border: 1px dashed #dee2e6;
+    transition: all 0.3s ease;
+  }
+  
+  .secure-payment:hover {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: #adb5bd;
+  }
+  
+  .secure-payment i {
+    color: #4CAF50;
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+  }
+  
+  @media (max-width: 768px) {
+    .payment-container {
+      padding: 1rem;
+    }
+    
+    .payment-body {
+      padding: 1.5rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-container">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12">
+        <div class="payment-card">
+          <!-- Header -->
+          <div class="payment-header">
+            <h2>Complete Your Purchase</h2>
+            <p class="mb-0">Securely complete your payment</p>
+          </div>
+          
+          <div class="payment-body">
+            <div class="row">
+              <!-- Order Summary -->
+              <div class="col-lg-5 mb-4">
+                <h5 class="mb-3">Order Summary</h5>
+                <div class="payment-summary">
+                  {% if course %}
+                  <div class="course-item">
+                    <span>{{ course.title }}</span>
+                    <span>₹{{ course.price|floatformat:2 }}</span>
+                  </div>
+                  {% if course.discount_price %}
+                  <div class="course-item">
+                    <span class="text-success">Discount Applied</span>
+                    <span>-₹{{ course.get_discount_amount|floatformat:2 }}</span>
+                  </div>
+                  {% endif %}
+                  {% else %}
+                  <div class="course-item">
+                    <span>No course selected</span>
+                    <span>₹0.00</span>
+                  </div>
+                  {% endif %}
+                  <div class="total-amount text-end">
+                    {% if course %}
+                      {% if course.discount_price %}
+                        <span class="text-muted text-decoration-line-through me-2">₹{{ course.price|floatformat:2 }}</span>
+                        <span>Total: ₹{{ course.discount_price|floatformat:2 }}</span>
+                      {% else %}
+                        <span>Total: ₹{{ course.price|floatformat:2 }}</span>
+                      {% endif %}
+                    {% else %}
+                      <span>Total: ₹0.00</span>
+                    {% endif %}
+                  </div>
+                </div>
+                
+                <div class="secure-payment">
+                  <i class="bi bi-shield-lock"></i>
+                  <span>Secure SSL Encryption</span>
+                </div>
+              </div>
+              
+              <!-- Payment Form -->
+              <div class="col-lg-7">
+                <h5 class="mb-3">Payment Method</h5>
+                
+                <!-- Stripe Payment Form -->
+                <div class="payment-form" id="card-form">
+                  <form id="payment-form" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="course_id" value="{{ course.id }}">
+                    
+                    <!-- Stripe Card Element -->
+                    <div class="mb-3">
+                      <label for="card-element" class="form-label">Credit/Debit Card</label>
+                      <div id="card-element" class="form-control">
+                        <!-- A Stripe Element will be inserted here. -->
+                      </div>
+                      <div id="card-errors" class="text-danger mt-2" role="alert"></div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-pay btn-success">
+                      {% if course %}
+                        {% if course.price > 0 %}
+                          <i class="bi bi-lock me-2"></i>Pay ₹{{ total_amount|floatformat:2 }}
+                        {% else %}
+                          <i class="bi bi-check-circle me-2"></i>Enroll for Free
+                        {% endif %}
+                      {% else %}
+                        <i class="bi bi-lock me-2"></i>Complete Payment
+                      {% endif %}
+                    </button>
+                    
+                    <div class="secure-payment">
+                      <i class="bi bi-shield-lock"></i>
+                      <span>Your payment is secure and encrypted</span>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<!-- Load Stripe.js -->
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+// Wrap all JavaScript code in an IIFE to avoid global scope pollution
+(function() {
+  // Wait for DOM to be fully loaded
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Stripe
+    const stripe = Stripe('{{ STRIPE_PUBLIC_KEY }}');
+    const elements = stripe.elements();
+    
+    // Create Stripe card element
+    const card = elements.create('card', {
+      style: {
+        base: {
+          fontSize: '16px',
+          color: '#424770',
+          '::placeholder': {
+            color: '#aab7c4',
+          },
+        },
+      },
+    });
+    
+    // Mount card element
+    card.mount('#card-element');
+    
+    // Handle real-time validation errors from the card Element
+    card.addEventListener('change', function(event) {
+      const displayError = document.getElementById('card-errors');
+      if (event.error) {
+        displayError.textContent = event.error.message;
+      } else {
+        displayError.textContent = '';
+      }
+    });
+  }); // End of DOMContentLoaded
+})(); // End of IIFE
+</script>
+{% endblock %}
+{% endblock %}

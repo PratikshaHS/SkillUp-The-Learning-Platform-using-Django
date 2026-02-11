@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}Learning Management System - Home{% endblock %}
+
+{% block content %}
+<div class="hero-section mb-5">
+    <div class="row align-items-center">
+        <div class="col-lg-6">
+            <h1 class="display-4 fw-bold text-primary mb-4">SkillUp - The Learning Platform</h1>
+            <p class="lead mb-4">
+                A comprehensive learning platform for students, instructors, and educational content. 
+                Enhance your skills with our easy-to-use interface and diverse course offerings.
+            </p>
+            <div class="d-flex gap-3 flex-wrap">
+                <a href="{% url 'studentRead' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-people-fill me-2"></i>Manage Students
+                </a>
+                <a href="{% url 'courseplatform:course_list' %}" class="btn btn-outline-primary btn-lg">
+                    <i class="bi bi-book me-2"></i>View Courses
+                </a>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                 class="img-fluid rounded shadow" alt="Students learning">
+        </div>
+    </div>
+</div>
+
+<!-- Feature Cards -->
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body text-center p-4">
+                <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 60px; height: 60px;">
+                    <i class="bi bi-people-fill text-primary fs-4"></i>
+                </div>
+                <h5 class="card-title">Student Management</h5>
+                <p class="card-text text-muted">
+                    Add, edit, and manage student records with search functionality and easy navigation.
+                </p>
+                <a href="{% url 'studentRead' %}" class="btn btn-outline-primary">Get Started</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body text-center p-4">
+                <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 60px; height: 60px;">
+                    <i class="bi bi-book text-success fs-4"></i>
+                </div>
+                <h5 class="card-title">SkillUp</h5>
+                <p class="card-text text-muted">
+                    Discover and enroll in courses with different difficulty levels, categories, and pricing to enhance your skills.
+                </p>
+                <a href="{% url 'courseplatform:course_list' %}" class="btn btn-outline-success">Explore Courses</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body text-center p-4">
+                <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 60px; height: 60px;">
+                    <i class="bi bi-person-circle text-info fs-4"></i>
+                </div>
+                <h5 class="card-title">User Accounts</h5>
+                <p class="card-text text-muted">
+                    Secure user authentication with profile management and personalized experience.
+                </p>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'profile' %}" class="btn btn-outline-info">My Profile</a>
+                {% else %}
+                    <a href="{% url 'register' %}" class="btn btn-outline-info">Join Now</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Section -->
+<div class="bg-light rounded p-4 mb-5">
+    <div class="row text-center">
+        <div class="col-md-4">
+            <h3 class="text-primary fw-bold">{{ student_count|default:"0" }}</h3>
+            <p class="text-muted mb-0">Registered Students</p>
+        </div>
+        <div class="col-md-4">
+            <h3 class="text-success fw-bold">{{ course_count|default:"0" }}</h3>
+            <p class="text-muted mb-0">Available Courses</p>
+        </div>
+        <div class="col-md-4">
+            <h3 class="text-info fw-bold">{{ user_count|default:"0" }}</h3>
+            <p class="text-muted mb-0">Active Users</p>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+{% if user.is_authenticated %}
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-lightning-fill me-2"></i>Quick Actions</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <a href="{% url 'studentCreate' %}" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-person-plus me-2"></i>Add Student
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'courseplatform:course_create' %}" class="btn btn-outline-success w-100">
+                    <i class="bi bi-plus-circle me-2"></i>Add Course
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'studentRead' %}" class="btn btn-outline-info w-100">
+                    <i class="bi bi-search me-2"></i>Search Students
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'profile' %}" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-gear me-2"></i>Settings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

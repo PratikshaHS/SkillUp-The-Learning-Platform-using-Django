@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - SkillUp - The Learning Platform{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 mb-0"><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard</h1>
+    <div class="text-muted">
+        <i class="bi bi-clock me-1"></i>Last updated: {{ now|date:"M d, Y H:i" }}
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">Total Students</h6>
+                        <h3 class="mb-0">{{ student_count|default:"0" }}</h3>
+                    </div>
+                    <i class="bi bi-people-fill fs-1 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">Active Courses</h6>
+                        <h3 class="mb-0">{{ course_count|default:"0" }}</h3>
+                    </div>
+                    <i class="bi bi-book-fill fs-1 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">Registered Users</h6>
+                        <h3 class="mb-0">{{ user_count|default:"0" }}</h3>
+                    </div>
+                    <i class="bi bi-person-check-fill fs-1 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">Published Courses</h6>
+                        <h3 class="mb-0">{{ published_courses|default:"0" }}</h3>
+                    </div>
+                    <i class="bi bi-broadcast fs-1 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity & Quick Actions -->
+<div class="row g-4">
+    <!-- Recent Students -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recent Students</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_students %}
+                    <div class="list-group list-group-flush">
+                        {% for student in recent_students %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <h6 class="mb-1">{{ student.firstname }} {{ student.lastname }}</h6>
+                                <small class="text-muted">Phone: {{ student.phone }}</small>
+                            </div>
+                            <a href="{% url 'studentUpdate' student.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'studentRead' %}" class="btn btn-primary">View All Students</a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-people text-muted fs-1"></i>
+                        <p class="text-muted mt-2">No students registered yet</p>
+                        <a href="{% url 'studentCreate' %}" class="btn btn-primary">Add First Student</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-lightning-fill me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <a href="{% url 'studentCreate' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-person-plus me-2"></i>Add New Student
+                    </a>
+                    <a href="{% url 'courseplatform:course_create' %}" class="btn btn-outline-success btn-lg">
+                        <i class="bi bi-plus-circle me-2"></i>Create Course
+                    </a>
+                    <a href="{% url 'studentRead' %}" class="btn btn-outline-info btn-lg">
+                        <i class="bi bi-search me-2"></i>Search Students
+                    </a>
+                    <a href="{% url 'courseplatform:course_list' %}" class="btn btn-outline-warning btn-lg">
+                        <i class="bi bi-list-ul me-2"></i>Manage Courses
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Information -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>System Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Application Features:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Student Management (CRUD)</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i>SkillUp Learning Platform</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i>User Authentication</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Search & Filter</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Quick Tips:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-lightbulb text-warning me-2"></i>Use the search bar to find students quickly</li>
+                            <li><i class="bi bi-lightbulb text-warning me-2"></i>Filter courses by level and category</li>
+                            <li><i class="bi bi-lightbulb text-warning me-2"></i>Update your profile for better experience</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

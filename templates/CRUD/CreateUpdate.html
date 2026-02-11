@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}{{ title|default:"Student" }} - Learning Hub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <!-- Header -->
+    <div class="d-flex align-items-center mb-4">
+      <a href="{% url 'studentRead' %}" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h2 class="mb-1">
+          <i class="bi bi-person-{% if 'Add' in title %}plus{% else %}pencil{% endif %} me-2 text-primary"></i>
+          {{ title|default:"Student Form" }}
+        </h2>
+        <p class="text-muted mb-0">
+          {% if 'Add' in title %}
+            Register a new student in the learning management system
+          {% else %}
+            Update student information and details
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+          <i class="bi bi-form me-2"></i>Student Information
+        </h5>
+      </div>
+      <div class="card-body p-4">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          
+          <!-- Form Fields -->
+          <div class="row g-4">
+            <div class="col-md-6">
+              <label for="{{ form.firstname.id_for_label }}" class="form-label fw-semibold">
+                <i class="bi bi-person me-1"></i>First Name <span class="text-danger">*</span>
+              </label>
+              {{ form.firstname }}
+              {% if form.firstname.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.firstname.errors %}
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">Enter the student's first name</div>
+            </div>
+            
+            <div class="col-md-6">
+              <label for="{{ form.lastname.id_for_label }}" class="form-label fw-semibold">
+                <i class="bi bi-person me-1"></i>Last Name
+              </label>
+              {{ form.lastname }}
+              {% if form.lastname.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.lastname.errors %}
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">Enter the student's last name (optional)</div>
+            </div>
+            
+            <div class="col-12">
+              <label for="{{ form.phone.id_for_label }}" class="form-label fw-semibold">
+                <i class="bi bi-telephone me-1"></i>Phone Number <span class="text-danger">*</span>
+              </label>
+              {{ form.phone }}
+              {% if form.phone.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.phone.errors %}
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">Enter a valid phone number for contact purposes</div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="row mt-4">
+            <div class="col-12">
+              <div class="d-flex gap-3 justify-content-end">
+                <a class="btn btn-outline-secondary btn-lg" href="{% url 'studentRead' %}">
+                  <i class="bi bi-x-circle me-2"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i class="bi bi-check-circle me-2"></i>
+                  {% if 'Add' in title %}Save Student{% else %}Update Student{% endif %}
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Help Card -->
+    <div class="card mt-4 border-info">
+      <div class="card-body">
+        <h6 class="text-info"><i class="bi bi-info-circle me-2"></i>Tips</h6>
+        <ul class="mb-0 small text-muted">
+          <li>First name is required for all students</li>
+          <li>Phone number should be a valid contact number</li>
+          <li>Last name is optional but recommended for better organization</li>
+          <li>All information can be updated later if needed</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

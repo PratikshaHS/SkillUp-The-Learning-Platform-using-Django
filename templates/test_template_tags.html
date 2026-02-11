@@ -1,0 +1,71 @@
+{% load static course_extras %}
+<!DOCTYPE html>
+{% load static %}
+<html>
+<head>
+    <title>Test Template Tags</title>
+    <style>
+        .test-image {
+            width: 200px;
+            height: 150px;
+            object-fit: cover;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle image fallbacks
+            document.querySelectorAll('img[data-fallback]').forEach(function(img) {
+                img.onerror = function() {
+                    this.onerror = null;
+                    this.src = this.dataset.fallback;
+                };
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Testing Template Tags</h1>
+    
+    <h2>Test split filter:</h2>
+    {% with test_string="one,two,three,four,five" %}
+    <p>Original string: {{ test_string }}</p>
+    <p>Split result: {{ test_string|split:","|join:"|" }}</p>
+    {% endwith %}
+    
+    <h2>Test get_item filter:</h2>
+    {% with test_list="one,two,three,four,five"|split:"," %}
+    <p>List: {{ test_list|join:", " }}</p>
+    <p>Item at index 2: {{ test_list|get_item:2 }}</p>
+    {% endwith %}
+    
+    <h2>Test image loading:</h2>
+    {% with image_files='programming.jpg,mathematics.jpg,science.jpg'|split:',' %}
+    <div style="display: flex; gap: 10px;">
+        {% for i in "012"|make_list %}
+            {% with image_file=image_files|get_item:forloop.counter0|default:'technology.jpg' %}
+            <div>
+                <p>Image {{ forloop.counter }}: {{ image_file }}</p>
+                {% with fallback_url='CoursePlatform/images/courses/technology.jpg' %}
+                <img src="{% static 'CoursePlatform/images/courses/'|add:image_file %}" 
+                     alt="{{ image_file }}" 
+                     class="test-image"
+                     data-fallback="{% static fallback_url %}">
+                {% endwith %}
+            </div>
+            {% endwith %}
+        {% endfor %}
+    </div>
+    {% endwith %}
+    
+    <h2>Test fallback image:</h2>
+    <div>
+        <p>Non-existent image (should show fallback):</p>
+        {% with fallback_url='CoursePlatform/images/courses/technology.jpg' %}
+        <img src="{% static 'CoursePlatform/images/courses/nonexistent.jpg' %}" 
+             alt="Fallback test" 
+             class="test-image"
+             data-fallback="{% static fallback_url %}">
+        {% endwith %}
+    </div>
+</body>
+</html>

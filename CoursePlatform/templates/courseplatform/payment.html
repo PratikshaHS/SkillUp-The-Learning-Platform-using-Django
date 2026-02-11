@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Complete Your Enrollment</h3>
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title">{{ course.title }}</h4>
+                    <p class="card-text">Instructor: {{ course.instructor }}</p>
+                    <p class="card-text">Price: ₹{{ course.price }}</p>
+                    
+                    <div class="mt-4">
+                        <button id="checkout-button" class="btn btn-primary btn-lg w-100">
+                            Pay ₹{{ course.price }}
+                        </button>
+                    </div>
+                    
+                    <div class="mt-3 text-center">
+                        <a href="{{ course.get_absolute_url }}" class="btn btn-outline-secondary">
+                            Back to Course
+                        </a>
+                    </div>
+                    
+                    <div id="error-message" class="alert alert-danger mt-3 d-none"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkoutButton = document.getElementById('checkout-button');
+        const errorElement = document.getElementById('error-message');
+        
+        if (!checkoutButton) return;
+        
+        function showError(message) {
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.classList.remove('d-none');
+            } else {
+                alert(message);
+            }
+        }
+        
+        checkoutButton.addEventListener('click', async function() {
+            if (!window.stripe) {
+                showError('Payment system is not ready. Please refresh the page and try again.');
+                return;
+            }
+            
+            // Show loading state
+            checkoutButton.disabled = true;
+            checkoutButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            
+            if (errorElement) {
+                errorElement.classList.add('d-none');
+            }
+            
+            try {
+                // Create a new Checkout Session
+                const response = await fetch('{% url "courseplatform:checkout" course.id %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Failed to create checkout session');
+                }
+                
+                // Initialize Stripe with your publishable key
+                const stripe = Stripe('{{ STRIPE_PUBLIC_KEY }}');
+                if (!stripe) {
+                    throw new Error('Payment system is not available. Please try again later.');
+                }
+                const result = await stripe.redirectToCheckout({
+                    sessionId: data.sessionId
+                });
+                
+                if (result.error) {
+                    throw new Error(result.error.message);
+                }
+                
+            } catch (error) {
+                showError('An error occurred: ' + error.message);
+                checkoutButton.disabled = false;
+                checkoutButton.textContent = 'Pay ₹{{ course.price }}';
+            }
+        });
+    });
+</script>
+{% endblock %}
+
+

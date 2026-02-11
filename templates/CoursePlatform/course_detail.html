@@ -1,0 +1,2493 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ course.title }} - Online Course Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+  .course-header {
+    background-size: cover;
+    background-position: center;
+    color: white;
+    padding: 4rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0.5rem;
+  }
+  
+  /* Inline style will be used for dynamic background image */
+  
+  .rating-stars {
+    color: #ffc107;
+    font-size: 1.2rem;
+  }
+  
+  .enroll-btn {
+    font-weight: 600;
+    padding: 0.8rem 2rem;
+    font-size: 1.1rem;
+  }
+  
+  .instructor-img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+  }
+  
+  .learning-point {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 0.8rem;
+  }
+  
+  .learning-point i {
+    color: #0d6efd;
+    margin-right: 0.8rem;
+    margin-top: 0.2rem;
+  }
+  
+  .video-item {
+    transition: all 0.2s ease;
+  }
+  
+  .video-item:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .promo-video {
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Dropdown dark theme styles */
+  .dropdown-menu-dark {
+    background-color: #343a40;
+    border-color: #454d55;
+  }
+  
+  .dropdown-menu-dark .dropdown-item {
+    color: #f8f9fa;
+  }
+  
+  .dropdown-menu-dark .dropdown-item:hover {
+    background-color: #2b3035;
+    color: #fff;
+  }
+  
+  /* Accordion button styles */
+  .accordion-button:not(.collapsed) {
+    background-color: #f8f9fa;
+    color: #0d6efd;
+    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.125);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Course Header -->
+{% load static %}
+{% with default_image='CoursePlatform/images/courses/education.jpg' %}
+<div class="course-header" 
+     style="min-height: 400px; display: flex; align-items: center;"
+     data-header-image="{% if course.thumbnail and course.thumbnail.name %}{% static course.thumbnail.name %}{% else %}{% static default_image %}{% endif %}"
+     data-fallback-image="{% static default_image %}">
+  <!-- Removed dark overlay for a cleaner look -->
+  <div class="header-overlay" style="
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 1;
+  "></div>
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-lg-8">
+        {% if course.level %}
+        <span class="badge bg-primary mb-2">{{ course.get_level_display|default:"All Levels" }}</span>
+        {% endif %}
+        <h1 class="display-5 fw-bold mb-3">{{ course.title|default:"Untitled Course" }}</h1>
+        <p class="lead mb-4">
+          {% if course.short_description %}
+            {{ course.short_description }}
+          {% elif course.description %}
+            {{ course.description|truncatewords:20 }}
+          {% else %}
+            No description available.
+          {% endif %}
+        </p>
+        
+        <div class="d-flex align-items-center mb-3">
+          <div class="rating-stars me-3">
+            {% with rating=course.average_rating|default:0|floatformat:'0'|add:'0' %}
+            {% for i in '12345' %}
+              <i class="bi bi-star{% if forloop.counter0 < rating %}-fill{% endif %}" 
+                 {% if forloop.counter0 < rating %}title="{{ rating }} out of 5"{% endif %}></i>
+            {% endfor %}
+            {% endwith %}
+            <span class="ms-2 text-white-50">
+              {% if course.total_reviews %}
+                ({{ course.total_reviews }} rating{{ course.total_reviews|pluralize }})
+              {% else %}
+                (No ratings yet)
+              {% endif %}
+            </span>
+          </div>
+          <span class="text-white-50">
+            <i class="bi bi-people-fill me-1"></i> {{ course.students_enrolled }} students enrolled
+          </span>
+        </div>
+        
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          {% if course.duration %}
+          <span class="badge bg-light text-dark">
+            <i class="bi bi-clock me-1"></i> {{ course.get_duration_display|default:"Self-paced" }}
+          </span>
+          {% endif %}
+          <span class="badge bg-light text-dark">
+            <i class="bi bi-collection-play me-1"></i> 
+            {{ course.videos.count|default:0 }} lesson{{ course.videos.count|default:0|pluralize }}
+          </span>
+          {% if course.is_featured %}
+          <span class="badge bg-warning text-dark">
+            <i class="bi bi-star-fill me-1"></i> Featured
+          </span>
+          {% endif %}
+          {% if course.language %}
+          <span class="badge bg-info text-dark">
+            <i class="bi bi-translate me-1"></i> {{ course.language }}
+          </span>
+          {% endif %}
+        </div>
+                {% if course.is_published %}
+          <div class="d-flex gap-3 mt-4">
+            {% if course.price and course.price > 0 %}
+              {% if course.discount_price %}
+              <div class="d-flex align-items-center">
+                <span class="h3 mb-0 fw-bold">₹{{ course.discount_price|floatformat:2|default:"0.00" }}</span>
+                <span class="ms-2 text-decoration-line-through text-white-50">₹{{ course.price|floatformat:2|default:"0.00" }}</span>
+                {% if course.get_discount_percentage %}
+                <span class="badge bg-danger ms-2">{{ course.get_discount_percentage }}% OFF</span>
+                {% endif %}
+              </div>
+              {% else %}
+              <span class="h3 mb-0 fw-bold">₹{{ course.price|floatformat:2|default:"0.00" }}</span>
+              {% endif %}
+              <div class="position-relative d-inline-block">
+                <a href="{% if user.is_authenticated %}{% url 'courseplatform:payment' %}?course_id={{ course.id }}{% else %}#loginModal{% endif %}" 
+                   class="btn btn-warning enroll-btn px-4 py-3 fw-bold" 
+                   {% if not user.is_authenticated %}data-bs-toggle="modal" data-bs-target="#loginModal"{% endif %}
+                   style="min-width: 200px; position: relative; z-index: 1;"
+                   id="enrollButton"
+                   data-course-id="{{ course.id }}"
+                   data-authenticated="{{ user.is_authenticated|yesno:'true,false' }}">
+                  <i class="bi bi-credit-card me-2"></i>Enroll Now - ₹{{ course.discount_price|floatformat:2|default:course.price|floatformat:2 }}
+                </a>
+                <div class="position-absolute top-0 end-0 h-100 bg-white bg-opacity-25" style="width: 40px; transform: skewX(-25deg) translateX(30px); transition: transform 0.3s ease; z-index: 0;"></div>
+                <span class="position-absolute top-0 left-0 w-100 h-100 bg-white bg-opacity-10" style="opacity: 0; transition: opacity 0.3s ease; z-index: 0;"></span>
+              </div>
+            {% else %}
+              <span class="h3 mb-0 fw-bold text-success">Free</span>
+              <div class="position-relative d-inline-block">
+                <a href="{% if user.is_authenticated %}{% url 'courseplatform:payment' %}?course_id={{ course.id }}{% else %}#loginModal{% endif %}" 
+                   class="btn btn-success enroll-btn px-4 py-3 fw-bold" 
+                   {% if not user.is_authenticated %}data-bs-toggle="modal" data-bs-target="#loginModal"{% endif %}
+                   style="min-width: 200px; position: relative; z-index: 1;"
+                   id="enrollFreeButton"
+                   data-course-id="{{ course.id }}"
+                   data-authenticated="{{ user.is_authenticated|yesno:'true,false' }}">
+                  <i class="bi bi-check-lg me-2"></i>Enroll for Free
+                </a>
+                <span class="position-absolute top-0 left-0 w-100 h-100 bg-white bg-opacity-10" style="opacity: 0; transition: opacity 0.3s ease; z-index: 0;"></span>
+              </div>
+            {% endif %}
+          </div>
+          {% else %}
+          <div class="alert alert-warning d-inline-flex align-items-center mt-3" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <div>This course is not currently available for enrollment.</div>
+          </div>
+          {% endif %}
+          
+          {% if not user.is_authenticated %}
+          <div class="mt-3">
+            <a href="{% url 'login' %}?next={{ request.path }}" class="text-white text-decoration-underline">Sign in</a> to enroll in this course
+          </div>
+          {% endif %}
+          
+          <!-- Payment Methods -->
+          <div class="mt-3 d-flex align-items-center gap-2">
+            <small class="text-white-50 me-2">Secure payment:</small>
+            <i class="bi bi-credit-card-2-front text-white-50" title="Credit/Debit Card"></i>
+            <i class="bi bi-paypal text-primary" title="PayPal"></i>
+            <i class="bi bi-google-pay text-white-50" title="Google Pay"></i>
+            <i class="bi bi-currency-bitcoin text-warning" title="Cryptocurrency"></i>
+          </div>
+          
+          <!-- Money Back Guarantee -->
+          <div class="mt-2">
+            <div class="d-flex align-items-center">
+              <i class="bi bi-shield-check text-success me-2"></i>
+              <small class="text-white-50">30-day money-back guarantee</small>
+            </div>
+          </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row">
+    <!-- Main Content -->
+    <div class="col-lg-8">
+      <!-- Featured Video -->
+      <div class="card mb-5">
+        <div class="card-header bg-white py-3">
+          <h3 class="h5 mb-0"><i class="bi bi-play-circle-fill text-primary me-2"></i>Featured Video</h3>
+        </div>
+        <div class="card-body p-0">
+          <div class="ratio ratio-16x9">
+            <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1&showinfo=0" 
+                    title="{{ course.title }} - Introduction" 
+                    class="border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen></iframe>
+          </div>
+          <div class="p-4">
+            <h4 class="h5">Welcome to {{ course.title }}</h4>
+            <p class="text-muted mb-0">Get started with this course by watching our introduction video.</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Additional Videos -->
+      <div class="card mb-5">
+        <div class="card-header bg-white py-3">
+          <h3 class="h5 mb-0"><i class="bi bi-collection-play-fill text-primary me-2"></i>Course Videos</h3>
+        </div>
+        <div class="list-group list-group-flush">
+          <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              <span class="badge bg-light text-dark me-3">1</span>
+              <div>
+                <h6 class="mb-1">Introduction to the Course</h6>
+                <small class="text-muted">5:32</small>
+              </div>
+            </div>
+            <i class="bi bi-play-circle text-primary"></i>
+          </a>
+          <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              <span class="badge bg-light text-dark me-3">2</span>
+              <div>
+                <h6 class="mb-1">Getting Started with the Basics</h6>
+                <small class="text-muted">8:45</small>
+              </div>
+            </div>
+            <i class="bi bi-play-circle text-primary"></i>
+          </a>
+          <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              <span class="badge bg-light text-dark me-3">3</span>
+              <div>
+                <h6 class="mb-1">Advanced Concepts</h6>
+                <small class="text-muted">12:15</small>
+              </div>
+            </div>
+            <i class="bi bi-play-circle text-primary"></i>
+          </a>
+          <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              <span class="badge bg-light text-dark me-3">4</span>
+              <div>
+                <h6 class="mb-1">Practical Examples</h6>
+                <small class="text-muted">15:20</small>
+              </div>
+            </div>
+            <i class="bi bi-play-circle text-primary"></i>
+          </a>
+        </div>
+      </div>
+      
+      <!-- Promo Video -->
+      {% if course.promo_video %}
+      <div class="promo-video mb-5">
+        <div class="ratio ratio-16x9">
+          <iframe src="{{ course.promo_video|default:''|add:'?rel=0&modestbranding=1&showinfo=0' }}" 
+                  title="{{ course.title }} Promo" 
+                  class="border-0"
+                  frameborder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowfullscreen>
+          </iframe>
+        </div>
+      </div>
+      {% endif %}
+      
+      <!-- Course Tabs -->
+      <ul class="nav nav-tabs mb-4" id="courseTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="curriculum-tab" data-bs-toggle="tab" data-bs-target="#curriculum" type="button" role="tab" aria-controls="curriculum" aria-selected="true">Curriculum</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="instructor-tab" data-bs-toggle="tab" data-bs-target="#instructor" type="button" role="tab" aria-controls="instructor" aria-selected="false">Instructor</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab" aria-controls="reviews" aria-selected="false">Reviews</button>
+        </li>
+      </ul>
+      
+      <div class="tab-content" id="courseTabsContent">
+        
+        <!-- Enhanced Video Player -->
+        <div class="card mb-4 shadow-sm" id="mainVideoPlayer" style="display: none;">
+          <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0" id="videoTitle">Select a video to start</h5>
+            <div class="d-flex align-items-center">
+              <button id="themeToggle" class="btn btn-sm btn-outline-light me-2" title="Toggle theme">
+                <i class="bi bi-moon-stars"></i>
+              </button>
+              <button id="fullscreenBtn" class="btn btn-sm btn-outline-light" title="Fullscreen">
+                <i class="bi bi-arrows-fullscreen"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-0 bg-black">
+            <div class="ratio ratio-16x9 position-relative">
+              <iframe id="mainVideoFrame" 
+                      src="" 
+                      title="Course Video" 
+                      frameborder="0" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen
+                      class="video-iframe">
+              </iframe>
+              <div id="videoLoader" class="position-absolute top-50 start-50 translate-middle text-white" style="display: none;">
+                <div class="spinner-border" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Video Controls -->
+            <div class="bg-dark text-white p-3">
+              <!-- Progress Bar -->
+              <div class="progress mb-2" style="height: 4px; cursor: pointer;" id="progressContainer">
+                <div id="progressBar" class="progress-bar bg-danger" role="progressbar" style="width: 0%"></div>
+              </div>
+              
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                  <button id="playPauseBtn" class="btn btn-link text-white p-1 me-2">
+                    <i class="bi bi-play-fill" style="font-size: 1.25rem;"></i>
+                  </button>
+                  <div class="text-white-50 small" id="currentTime">0:00</div>
+                  <div class="mx-2 text-white-50">/</div>
+                  <div class="text-white-50 small" id="duration">0:00</div>
+                </div>
+                
+                <div class="d-flex align-items-center">
+                  <div class="dropdown me-2">
+                    <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" id="speedDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                      <span id="currentSpeed">1x</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="speedDropdown">
+                      <li><a class="dropdown-item speed-option" href="#" data-speed="0.5">0.5x</a></li>
+                      <li><a class="dropdown-item speed-option" href="#" data-speed="0.75">0.75x</a></li>
+                      <li><a class="dropdown-item speed-option active" href="#" data-speed="1">1x (Normal)</a></li>
+                      <li><a class="dropdown-item speed-option" href="#" data-speed="1.25">1.25x</a></li>
+                      <li><a class="dropdown-item speed-option" href="#" data-speed="1.5">1.5x</a></li>
+                      <li><a class="dropdown-item speed-option" href="#" data-speed="2">2x</a></li>
+                    </ul>
+                  </div>
+                  
+                  <button id="downloadBtn" class="btn btn-sm btn-outline-light me-2" title="Download">
+                    <i class="bi bi-download"></i>
+                  </button>
+                  
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" id="moreOptions" data-bs-toggle="dropdown" aria-expanded="false">
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="moreOptions">
+                      <li><a class="dropdown-item" href="#" id="transcriptBtn"><i class="bi bi-card-text me-2"></i>Show Transcript</a></li>
+                      <li><a class="dropdown-item" href="#" id="downloadHdBtn"><i class="bi bi-download me-2"></i>Download HD</a></li>
+                      <li><a class="dropdown-item" href="#" id="reportIssue"><i class="bi bi-flag me-2"></i>Report Issue</a></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Video Transcript -->
+          <div class="card-footer bg-dark text-white" id="transcriptPanel" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0">Transcript</h6>
+              <button type="button" class="btn-close btn-close-white" id="closeTranscript"></button>
+            </div>
+            <div id="transcriptContent" class="small">
+              <div class="text-center py-3 text-white-50">
+                <i class="bi bi-info-circle me-1"></i> Transcript will appear here when available
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Curriculum Tab -->
+        <div class="tab-pane fade" id="curriculum" role="tabpanel" aria-labelledby="curriculum-tab">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body p-3">
+              <div id="currentVideoInfo" class="d-none mb-3">
+                <h4 class="h6 text-muted mb-2">Now Playing: <span id="currentVideoTitle"></span></h4>
+              </div>
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div>
+                    <span class="h6 mb-0">{{ course.title }}</span>
+                    <span class="badge bg-secondary ms-2">{{ course.videos.count }} lessons</span>
+                  </div>
+                  <div>
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button class="btn btn-outline-secondary" id="expandAllSections" title="Expand All">
+                        <i class="bi bi-arrows-angle-expand"></i>
+                      </button>
+                      <div class="form-check form-switch d-flex align-items-center px-2">
+                        <input class="form-check-input m-0" type="checkbox" id="autoplayNext" checked>
+                        <label class="form-check-label small ms-1" for="autoplayNext" title="Autoplay">
+                          <i class="bi bi-play-circle"></i>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="accordion" id="courseAccordion">
+                  {% regroup course.videos.all by section as video_sections %}
+                  {% if video_sections %}
+                    {% for section in video_sections %}
+                    <div class="accordion-item mb-3 border-0">
+                      <h2 class="accordion-header" id="section{{ forloop.counter }}">
+                        <button class="accordion-button bg-light rounded-3 {% if not forloop.first %}collapsed{% endif %}" 
+                                type="button" 
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#collapse{{ forloop.counter }}" 
+                                aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" 
+                                aria-controls="collapse{{ forloop.counter }}">
+                          <div class="d-flex w-100 align-items-center">
+                            <i class="bi bi-collection-play-fill text-primary me-2"></i>
+                            <span class="fw-medium">{{ section.grouper|default:course.title }}</span>
+                            <span class="badge bg-secondary ms-2">{{ section.list|length }} {% if section.list|length == 1 %}video{% else %}videos{% endif %}</span>
+                            <span class="ms-auto small text-muted">
+                              <span class="completion-badge">0/{{ section.list|length }} completed</span>
+                            </span>
+                          </div>
+                        </button>
+                      </h2>
+                      <div id="collapse{{ forloop.counter }}" 
+                           class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" 
+                           aria-labelledby="section{{ forloop.counter }}" 
+                           data-bs-parent="#courseAccordion">
+                        <div class="accordion-body p-0 mt-2">
+                          <div class="list-group list-group-flush">
+                            {% for video in section.list %}
+                            <div class="list-group-item video-item p-3 border-0 rounded-3 mb-2 shadow-sm" 
+                                 data-video-id="{{ video.id }}"
+                                 onclick="playVideo('{{ video.get_embed_url }}', '{{ video.title|escapejs }}', '{{ video.id }}')" 
+                                 style="cursor: pointer; transition: all 0.2s;">
+                              <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                  <div class="position-relative me-3">
+                                    <i class="bi bi-play-circle-fill text-primary" style="font-size: 1.5rem;"></i>
+                                    <div class="position-absolute top-50 start-50 translate-middle" style="display: none;">
+                                      <i class="bi bi-check-circle-fill text-success" style="font-size: 1.5rem;"></i>
+                                    </div>
+                                  </div>
+                                  <div class="flex-grow-1">
+                                    <h6 class="mb-0 d-flex align-items-center">
+                                      {{ video.title }}
+                                      {% if forloop.first %}
+                                      <span class="badge bg-warning text-dark ms-2">Preview</span>
+                                      {% endif %}
+                                    </h6>
+                                    <div class="d-flex align-items-center mt-1">
+                                      <small class="text-muted me-3">
+                                        <i class="bi bi-clock me-1"></i> {{ video.duration|default:"5:00" }} min
+                                      </small>
+                                      <small class="text-muted">
+                                        <i class="bi bi-info-circle me-1"></i> {{ video.description|truncatewords:8 }}
+                                      </small>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                  <div class="progress me-3" style="width: 80px; height: 4px;">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+                                  </div>
+                                  <button class="btn btn-sm btn-outline-secondary" 
+                                          type="button" 
+                                          onclick="event.stopPropagation(); togglePreview('{{ video.get_embed_url }}', '{{ video.title|escapejs }}', '{{ video.id }}')"
+                                          data-bs-toggle="tooltip" 
+                                          data-bs-placement="top" 
+                                          title="Preview">
+                                    <i class="bi bi-play-fill"></i>
+                                  </button>
+                                </div>
+                              </div>
+                              <div class="collapse mt-2" id="video-{{ video.id }}">
+                                <div class="ratio ratio-16x9 mt-2">
+                                  <iframe src="" 
+                                          id="preview-{{ video.id }}"
+                                          title="{{ video.title }}" 
+                                          frameborder="0" 
+                                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                          allowfullscreen>
+                                  </iframe>
+                                </div>
+                              </div>
+                            </div>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {% endfor %}
+                  {% else %}
+                    <div class="text-center py-4">
+                      <i class="bi bi-youtube text-muted" style="font-size: 2.5rem;"></i>
+                      <p class="mt-2 mb-0">No videos have been added to this course yet.</p>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Instructor Tab -->
+        <div class="tab-pane fade" id="instructor" role="tabpanel" aria-labelledby="instructor-tab">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex align-items-start">
+                <div class="flex-shrink-0 me-4">
+                  <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                    <i class="bi bi-person-fill text-muted" style="font-size: 3rem;"></i>
+                  </div>
+                </div>
+                <div class="flex-grow-1">
+                  <h3 class="h5">{{ course.instructor }}</h3>
+                  <p class="text-muted mb-2">Instructor</p>
+                  <div class="d-flex gap-3 mb-3">
+                    <div>
+                      <div class="h5 mb-0">{{ instructor_courses_count|default:'10' }}</div>
+                      <small class="text-muted">Courses</small>
+                    </div>
+                    <div>
+                      <div class="h5 mb-0">{{ instructor_students|default:'5,000+' }}</div>
+                      <small class="text-muted">Students</small>
+                    </div>
+                    <div>
+                      <div class="h5 mb-0">4.8</div>
+                      <small class="text-muted">Avg. Rating</small>
+                    </div>
+                  </div>
+                  {% if course.instructor_bio %}
+                  <div class="instructor-bio">
+                    {{ course.instructor_bio|linebreaks }}
+                  </div>
+                  {% else %}
+                  <p class="text-muted">No biography available.</p>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Reviews Tab -->
+        <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
+          <div class="card">
+            <div class="card-body">
+              <div class="text-center py-5">
+                <div class="display-4 mb-2">{{ course.average_rating|default:'4.8' }}/5</div>
+                <div class="rating-stars mb-3" style="font-size: 1.5rem;">
+                  {% with ''|center:5 as range %}
+                    {% for _ in range %}
+                      <i class="bi bi-star-fill"></i>
+                    {% endfor %}
+                  {% endwith %}
+                </div>
+                <p class="text-muted">Based on {{ course.total_reviews|default:'24' }} reviews</p>
+                <button class="btn btn-primary">Write a Review</button>
+              </div>
+              
+              <!-- Sample Reviews -->
+              <div class="border-top pt-4">
+                <h4 class="h6 mb-4">Student Feedback</h4>
+                
+                <div class="mb-4">
+                  <div class="d-flex justify-content-between mb-2">
+                    <div class="d-flex align-items-center">
+                      <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                        <i class="bi bi-person-fill text-muted" style="font-size: 1.5rem;"></i>
+                      </div>
+                      <div>
+                        <h6 class="mb-0">John Doe</h6>
+                        <div class="rating-stars small">
+                          <i class="bi bi-star-fill"></i>
+                          <i class="bi bi-star-fill"></i>
+                          <i class="bi bi-star-fill"></i>
+                          <i class="bi bi-star-fill"></i>
+                          <i class="bi bi-star"></i>
+                        </div>
+                      </div>
+                    </div>
+                    <small class="text-muted">2 weeks ago</small>
+                  </div>
+                  <p class="mb-0">Great course! The instructor explains concepts clearly and provides practical examples. Highly recommended for beginners.</p>
+                </div>
+                
+                <div>
+                  <div class="d-flex justify-content-between mb-2">
+                    <div class="d-flex align-items-center">
+                      <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                        <i class="bi bi-person-fill text-muted" style="font-size: 1.5rem;"></i>
+                      </div>
+                      <div>
+                        <h6 class="mb-0">Jane Smith</h6>
+                        <div class="rating-stars small">
+                          <i class="bi bi-star-fill"></i>
+                          <i class="bi bi-star-fill"></i>
+                          <i class="bi bi-star-fill"></i>
+                          <i class="bi bi-star-fill"></i>
+                          <i class="bi bi-star-fill"></i>
+                        </div>
+                      </div>
+                    </div>
+                    <small class="text-muted">1 month ago</small>
+                  </div>
+                  <p class="mb-0">This course exceeded my expectations. The content is well-structured and the instructor is very knowledgeable. The hands-on projects were especially helpful.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Course Requirements -->
+  {% if course.requirements %}
+{{ ... }}
+          <div class="mb-4">
+            <h5>Requirements</h5>
+            <p class="card-text">{{ course.requirements|linebreaksbr }}</p>
+          </div>
+          {% endif %}
+          
+          <!-- What You'll Learn -->
+          {% if course.what_youll_learn %}
+          <div class="mb-4">
+            <h5>What You'll Learn</h5>
+            <p class="card-text">{{ course.what_youll_learn|linebreaksbr }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      
+      <!-- Course Videos -->
+      <div class="card mb-4">
+        <div class="card-header bg-white">
+          <h2 class="h5 mb-0">{{ course.title }}</h2>
+        </div>
+        <div class="list-group list-group-flush">
+          {% for video in course.videos.all %}
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-1">{{ video.title }}</h6>
+                <small class="text-muted">Video {{ forloop.counter }}</small>
+              </div>
+              <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" 
+                      data-bs-target="#video-{{ video.id }}" aria-expanded="false" aria-controls="video-{{ video.id }}">
+                Watch Now
+              </button>
+            </div>
+            <div class="collapse mt-2" id="video-{{ video.id }}">
+              <div class="ratio ratio-16x9">
+                <iframe src="{{ video.get_embed_url }}" 
+                        title="{{ video.title }}" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                </iframe>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="list-group-item text-center py-4">
+            <i class="bi bi-youtube text-muted" style="font-size: 2rem;"></i>
+            <p class="mt-2 mb-0">No videos have been added to this course yet.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+      <!-- Course Details Card -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <h3 class="h5 mb-4">This Course Includes</h3>
+          <ul class="list-unstyled">
+            <li class="mb-3">
+              <div class="d-flex align-items-center">
+                <i class="bi bi-play-circle text-primary me-3" style="font-size: 1.25rem;"></i>
+                <span>{{ course.videos.count }} hours on-demand video</span>
+              </div>
+            </li>
+            <li class="mb-3">
+              <div class="d-flex align-items-center">
+                <i class="bi bi-file-earmark-text text-primary me-3" style="font-size: 1.25rem;"></i>
+                <span>10 downloadable resources</span>
+              </div>
+            </li>
+            <li class="mb-3">
+              <div class="d-flex align-items-center">
+                <i class="bi bi-phone text-primary me-3" style="font-size: 1.25rem;"></i>
+                <span>Access on mobile and TV</span>
+              </div>
+            </li>
+            <li class="mb-3">
+              <div class="d-flex align-items-center">
+                <i class="bi bi-infinity text-primary me-3" style="font-size: 1.25rem;"></i>
+                <span>Full lifetime access</span>
+              </div>
+            </li>
+            <li class="mb-3">
+              <div class="d-flex align-items-center">
+                <i class="bi bi-trophy text-primary me-3" style="font-size: 1.25rem;"></i>
+                <span>Certificate of completion</span>
+              </div>
+            </li>
+          </ul>
+          
+          <div class="border-top pt-4 mt-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h3 class="h5 mb-0">Course Price</h3>
+              {% if course.is_featured %}
+              <span class="badge bg-warning text-dark">
+                <i class="bi bi-star-fill me-1"></i> Featured
+              </span>
+              {% endif %}
+            </div>
+            
+            {% if course.price > 0 %}
+              {% if course.discount_price %}
+              <div class="d-flex align-items-baseline mb-2">
+                <span class="h3 fw-bold">₹{{ course.discount_price|floatformat:2 }}</span>
+                <span class="ms-2 text-decoration-line-through text-muted">₹{{ course.price|floatformat:2 }}</span>
+                <span class="badge bg-danger ms-2">{{ course.get_discount_percentage }}% OFF</span>
+              </div>
+              <p class="text-success small mb-3">
+                <i class="bi bi-clock-history me-1"></i> Offer ends in 2 days
+              </p>
+              {% else %}
+              <div class="mb-3">
+                <span class="h3 fw-bold">₹{{ course.price|floatformat:2 }}</span>
+              </div>
+              {% endif %}
+              
+              <div class="d-grid gap-2">
+                <a href="{% if user.is_authenticated %}{% url 'courseplatform:payment' %}?course_id={{ course.id }}{% else %}#loginModal{% endif %}" 
+                   class="btn btn-primary btn-lg position-relative overflow-hidden py-3 fw-bold" 
+                   {% if not user.is_authenticated %}data-bs-toggle="modal" data-bs-target="#loginModal"{% endif %}
+                   style="transition: all 0.3s ease;">
+                  <i class="bi bi-credit-card me-2"></i>Enroll Now
+                  <span class="position-absolute top-0 left-0 w-100 h-100 bg-white bg-opacity-10" style="opacity: 0; transition: opacity 0.3s ease;"></span>
+                </a>
+                <button class="btn btn-outline-secondary position-relative overflow-hidden">
+                  <i class="bi bi-heart me-2"></i>Add to Wishlist
+                  <span class="position-absolute top-0 left-0 w-100 h-100 bg-dark bg-opacity-05" style="opacity: 0; transition: opacity 0.3s ease;"></span>
+                </button>
+              </div>
+              
+              <div class="text-center mt-3">
+                <small class="text-muted">30-Day Money-Back Guarantee</small>
+              </div>
+              
+              <div class="text-center mt-3">
+                <a href="#" class="text-decoration-none small">
+                  <i class="bi bi-gift me-1"></i> Gift this course
+                </a>
+              </div>
+              
+            {% else %}
+              <div class="mb-3">
+                <span class="h3 fw-bold text-success">Free</span>
+              </div>
+              
+              <div class="d-grid gap-2">
+                <button class="btn btn-success btn-lg">
+                  <i class="bi bi-check-lg me-2"></i>Enroll for Free
+                </button>
+              </div>
+              
+              <div class="text-center mt-3">
+                <small class="text-muted">Full lifetime access</small>
+              </div>
+            {% endif %}
+          </div>
+          
+          <div class="border-top pt-4 mt-4">
+            <h3 class="h5 mb-3">Share this course</h3>
+            <div class="d-flex gap-2">
+              <a href="#" class="btn btn-sm btn-outline-secondary flex-grow-1">
+                <i class="bi bi-facebook me-1"></i> Facebook
+              </a>
+              <a href="#" class="btn btn-sm btn-outline-secondary flex-grow-1">
+                <i class="bi bi-twitter me-1"></i> Twitter
+              </a>
+              <a href="#" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-link-45deg"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Course Features -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <h3 class="h5 mb-3">Course Features</h3>
+          <ul class="list-unstyled">
+            <li class="mb-3">
+              <div class="d-flex">
+                <i class="bi bi-check-circle-fill text-success me-2 mt-1"></i>
+                <div>
+                  <h6 class="mb-1">Lifetime Access</h6>
+                  <p class="text-muted small mb-0">Get unlimited access to this course after enrollment</p>
+                </div>
+              </div>
+            </li>
+            <li class="mb-3">
+              <div class="d-flex">
+                <i class="bi bi-check-circle-fill text-success me-2 mt-1"></i>
+                <div>
+                  <h6 class="mb-1">Certificate of Completion</h6>
+                  <p class="text-muted small mb-0">Earn a certificate upon completion</p>
+                </div>
+              </div>
+            </li>
+            <li class="mb-3">
+              <div class="d-flex">
+                <i class="bi bi-check-circle-fill text-success me-2 mt-1"></i>
+                <div>
+                  <h6 class="mb-1">100% Online</h6>
+                  <p class="text-muted small mb-0">Start instantly and learn at your own schedule</p>
+                </div>
+              </div>
+            </li>
+            <li>
+              <div class="d-flex">
+                <i class="bi bi-check-circle-fill text-success me-2 mt-1"></i>
+                <div>
+                  <h6 class="mb-1">Beginner Level</h6>
+                  <p class="text-muted small mb-0">No prior experience required</p>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+      <!-- Support -->
+      <div class="card">
+        <div class="card-body">
+          <h3 class="h5 mb-3">Need Help?</h3>
+          <p class="small text-muted">If you have any questions about this course, please contact our support team.</p>
+          <button class="btn btn-outline-primary w-100">
+            <i class="bi bi-question-circle me-2"></i>Contact Support
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- You May Also Like Section -->
+  <div id="you-may-also-like" class="mt-5">
+  <style>
+    /* Ensure cards are clickable and have proper hover states */
+    .course-card-link {
+      display: block;
+      height: 100%;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .course-card-link:hover {
+      transform: translateY(-5px);
+      text-decoration: none;
+    }
+    
+    .course-card-link .card {
+      height: 100%;
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .course-card-link:hover .card {
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    
+    .course-card-link:active .card {
+      transform: scale(0.98);
+    }
+  </style>
+  
+  <div class="row mt-5">
+    <div class="col-12">
+      <h2 class="h4 mb-4">You May Also Like</h2>
+    </div>
+    
+    <!-- Course Card 1 -->
+    <div class="col-md-4 mb-4">
+      <a href="#you-may-also-like" class="course-card-link" onclick="event.preventDefault(); document.getElementById('you-may-also-like').scrollIntoView({behavior: 'smooth'});">
+        <div class="card h-100 overflow-hidden transition-all hover-shadow">
+          <div class="position-relative">
+            <img src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Web Development Course" style="height: 160px; object-fit: cover;">
+            <div class="position-absolute top-0 start-0 m-2">
+              <span class="badge bg-primary">Bestseller</span>
+            </div>
+          </div>
+          <div class="card-body d-flex flex-column">
+            <div class="mb-2">
+              <span class="badge bg-primary mb-2">Beginner</span>
+            </div>
+            <h5 class="card-title">Introduction to Web Development</h5>
+            <p class="card-text text-muted small flex-grow-1">Learn the fundamentals of web development with HTML, CSS, and JavaScript through hands-on projects.</p>
+            <div class="d-flex justify-content-between align-items-center mt-auto">
+              <div class="rating-stars small">
+                <i class="bi bi-star-fill text-warning"></i>
+                <i class="bi bi-star-fill text-warning"></i>
+                <i class="bi bi-star-fill text-warning"></i>
+                <i class="bi bi-star-fill text-warning"></i>
+                <i class="bi bi-star text-warning"></i>
+                <span class="ms-1 text-muted">4.0 (1,234)</span>
+              </div>
+              <div>
+                <span class="fw-bold text-dark">₹999</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    
+    <!-- Course Card 2 -->
+    <div class="col-md-4 mb-4">
+      <a href="#you-may-also-like" class="course-card-link" onclick="event.preventDefault(); document.getElementById('you-may-also-like').scrollIntoView({behavior: 'smooth'});">
+        <div class="card h-100 overflow-hidden transition-all hover-shadow">
+          <div class="position-relative">
+            <img src="https://images.unsplash.com/photo-1542903660-eedba2cda473?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="JavaScript Course" style="height: 160px; object-fit: cover;">
+            <div class="position-absolute top-0 end-0 m-2">
+              <span class="badge bg-success">Trending</span>
+            </div>
+          </div>
+          <div class="card-body d-flex flex-column">
+            <div class="mb-2">
+              <span class="badge bg-warning text-dark mb-2">Intermediate</span>
+            </div>
+            <h5 class="card-title">Advanced JavaScript Concepts</h5>
+            <p class="card-text text-muted small flex-grow-1">Master advanced JavaScript concepts, modern frameworks, and best practices for professional development.</p>
+            <div class="d-flex justify-content-between align-items-center mt-auto">
+              <div class="rating-stars small">
+                <i class="bi bi-star-fill text-warning"></i>
+                <i class="bi bi-star-fill text-warning"></i>
+                <i class="bi bi-star-fill text-warning"></i>
+                <i class="bi bi-star-fill text-warning"></i>
+                <i class="bi bi-star-half text-warning"></i>
+                <span class="ms-1 text-muted">4.5 (856)</span>
+              </div>
+              <div>
+                <span class="text-decoration-line-through text-muted me-2 small">₹1,999</span>
+                <span class="fw-bold text-dark">₹1,499</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    
+    <!-- Course Card 3 -->
+    <div class="col-md-4 mb-4">
+      <a href="#you-may-also-like" class="course-card-link" onclick="event.preventDefault(); document.getElementById('you-may-also-like').scrollIntoView({behavior: 'smooth'});">
+        <div class="card h-100 overflow-hidden transition-all hover-shadow">
+          <div class="position-relative">
+            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Python Data Science Course" style="height: 160px; object-fit: cover;">
+            <div class="position-absolute top-0 start-0 m-2">
+              <span class="badge bg-danger">New</span>
+            </div>
+          </div>
+          <div class="card-body d-flex flex-column">
+            <div class="mb-2">
+              <span class="badge bg-success mb-2">Beginner</span>
+            </div>
+            <h5 class="card-title">Python for Data Science</h5>
+            <p class="card-text text-muted small flex-grow-1">Master Python programming for data analysis, visualization, and machine learning with real-world projects.</p>
+            <div class="d-flex justify-content-between align-items-center mt-auto">
+              <div class="rating-stars small">
+                <i class="bi bi-star-fill text-warning"></i>
+                <i class="bi bi-star-fill text-warning"></i>
+                <i class="bi bi-star-fill text-warning"></i>
+                <i class="bi bi-star-fill text-warning"></i>
+                <i class="bi bi-star-fill text-warning"></i>
+                <span class="ms-1 text-muted">4.8 (2,541)</span>
+              </div>
+              <div>
+                <span class="text-decoration-line-through text-muted me-2 small">₹2,499</span>
+                <span class="fw-bold text-dark">₹1,799</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+{% endwith %}
+{% endblock %}
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content overflow-hidden border-0 shadow-lg">
+      <!-- Modal Header -->
+      <div class="modal-header bg-primary text-white border-0">
+        <div class="w-100 text-center position-relative">
+          <h5 class="modal-title fw-bold mb-0">Complete Your Enrollment</h5>
+          <p class="text-white-75 mb-0 mt-1">Step 2 of 2: Secure Payment</p>
+          <button type="button" class="btn-close btn-close-white position-absolute end-0 top-0 m-2" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+      
+      <div class="modal-body p-0">
+        <div class="row g-0">
+          <!-- Left Side: Course Summary -->
+          <div class="col-md-5 bg-light p-4 d-flex flex-column">
+            <div class="mb-4">
+              <h6 class="text-uppercase text-muted small fw-bold mb-3">Order Summary</h6>
+              <div class="d-flex align-items-start mb-3">
+                <div class="flex-shrink-0 me-3">
+                  <div class="bg-white p-2 rounded-3 shadow-sm" style="width: 60px; height: 60px; overflow: hidden;">
+                    {% if course.thumbnail %}
+                      <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="img-fluid" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                      <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light">
+                        <i class="bi bi-camera text-muted"></i>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="flex-grow-1">
+                  <h6 class="mb-1 fw-bold">{{ course.title|truncatechars:40 }}</h6>
+                  <div class="d-flex align-items-center">
+                    <span class="h6 fw-bold text-dark mb-0">
+                      ₹{{ course.discount_price|default:course.price|floatformat:2 }}
+                    </span>
+                    {% if course.discount_price %}
+                      <span class="text-muted text-decoration-line-through small ms-2">₹{{ course.price|floatformat:2 }}</span>
+                      <span class="badge bg-success bg-opacity-10 text-success small ms-2">
+                        Save {{ course.get_discount_percentage }}%
+                      </span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="bg-white p-3 rounded-3 shadow-sm mb-3">
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="text-muted">Subtotal</span>
+                  <span class="fw-medium">₹{{ course.discount_price|default:course.price|floatformat:2 }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="text-muted">Taxes</span>
+                  <span class="fw-medium">Included</span>
+                </div>
+                <hr class="my-2">
+                <div class="d-flex justify-content-between">
+                  <span class="fw-bold">Total</span>
+                  <span class="h5 mb-0 fw-bold text-primary">₹{{ course.discount_price|default:course.price|floatformat:2 }}</span>
+                </div>
+              </div>
+              
+              <div class="d-flex align-items-center text-muted small mb-3">
+                <i class="bi bi-shield-check text-success me-2"></i>
+                <span>Secure 256-bit SSL encryption</span>
+              </div>
+              
+              <div class="mt-auto">
+                <div class="d-flex align-items-center text-muted small mb-2">
+                  <i class="bi bi-check-circle-fill text-success me-2"></i>
+                  <span>Full lifetime access</span>
+                </div>
+                <div class="d-flex align-items-center text-muted small mb-2">
+                  <i class="bi bi-check-circle-fill text-success me-2"></i>
+                  <span>Certificate of completion</span>
+                </div>
+                <div class="d-flex align-items-center text-muted small">
+                  <i class="bi bi-check-circle-fill text-success me-2"></i>
+                  <span>30-day money-back guarantee</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Side: Payment Form -->
+          <div class="col-md-7 p-4">
+            <!-- Progress Steps -->
+            <div class="stepper-wrapper mb-4">
+              <div class="stepper-item completed">
+                <div class="step-counter"><i class="bi bi-check"></i></div>
+                <div class="step-name">Details</div>
+              </div>
+              <div class="stepper-item active">
+                <div class="step-counter">2</div>
+                <div class="step-name">Payment</div>
+              </div>
+            </div>
+            <div id="button-text" class="d-flex align-items-center justify-content-center">
+              <i class="bi bi-lock-fill me-2"></i>
+              Pay ₹{% if course.discount_price %}{{ course.discount_price|floatformat:2 }}{% else %}{{ course.price|floatformat:2 }}{% endif %}
+            </div>
+          </button>
+          
+          <!-- Trust Badges -->
+          <div class="mt-4 text-center">
+            <div class="d-flex justify-content-center align-items-center gap-3 mb-2">
+              <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1a63530bed6c9f6599f5ada6b71833a06d62fa27/svg/color/btc.svg" alt="Bitcoin" style="width: 24px; height: 24px;" title="Bitcoin">
+              <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1a63530bed6c9f6599f5ada6b71833a06d62fa27/svg/color/eth.svg" alt="Ethereum" style="width: 24px; height: 24px;" title="Ethereum">
+              <i class="bi bi-credit-card text-primary" title="Credit/Debit Cards"></i>
+              <i class="bi bi-paypal text-primary" title="PayPal"></i>
+              <i class="bi bi-google text-success" title="Google Pay"></i>
+              <i class="bi bi-apple text-dark" title="Apple Pay"></i>
+            </div>
+            <div class="d-flex justify-content-center align-items-center gap-2">
+              <i class="bi bi-shield-check text-success"></i>
+              <small class="text-muted">Secure checkout with 256-bit SSL encryption</small>
+            </div>
+            <div class="d-flex justify-content-center align-items-center gap-2 mt-1">
+              <i class="bi bi-arrow-counterclockwise text-primary"></i>
+              <small class="text-muted">30-day money-back guarantee</small>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script src="{% static 'js/enroll-button.js' %}"></script>
+<style>
+  /* Enhanced Button Hover Effects */
+  .enroll-btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease !important;
+    z-index: 1;
+  }
+  
+  .enroll-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  .enroll-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .enroll-btn:hover span:last-child {
+    opacity: 1 !important;
+  }
+  
+  .btn-warning.enroll-btn {
+    background: linear-gradient(45deg, #ffc107, #ff9800);
+    border: none;
+    color: #212529;
+  }
+  
+  .btn-success.enroll-btn {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    border: none;
+  }
+  
+  .btn-primary.enroll-btn {
+    background: linear-gradient(45deg, #0d6efd, #0dcaf0);
+    border: none;
+  }
+  
+  /* Payment Method Tabs */
+  .payment-method-tabs {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .payment-method-tab {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .payment-method-tab i {
+    font-size: 1.5rem;
+    color: #6c757d;
+  }
+  
+  .payment-method-tab span {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #495057;
+  }
+  
+  .payment-method-tab:hover {
+    border-color: #0d6efd;
+    background-color: #f8f9ff;
+  }
+  
+  .payment-method-tab.active {
+    border-color: #0d6efd;
+    background-color: #f0f5ff;
+  }
+  
+  .payment-method-tab.active i {
+    color: #0d6efd;
+  }
+  
+  /* Stepper Styles */
+  .stepper-wrapper {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    margin: 2rem 0;
+  }
+  
+  .stepper-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #e9ecef;
+    z-index: 1;
+  }
+  
+  .stepper-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    z-index: 2;
+  }
+  
+  .step-counter {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+  }
+  
+  .stepper-item.active .step-counter {
+    background: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+  }
+  
+  .stepper-item.completed .step-counter {
+    background: #198754;
+    color: white;
+    border-color: #198754;
+  }
+  
+  .step-name {
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-align: center;
+  }
+  
+  .stepper-item.active .step-name,
+  .stepper-item.completed .step-name {
+    color: #212529;
+    font-weight: 500;
+  }
+  
+  /* Form Styles */
+  .form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+  
+  /* Button Loading State */
+  #submit-payment[disabled] {
+    opacity: 0.8;
+  }
+  
+  #spinner {
+    display: none;
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+  }
+  
+  #submit-payment.loading #spinner {
+    display: inline-block;
+  }
+  /* Enhanced Payment Form Styles */
+  #payment-form .form-control:focus {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
+  }
+  
+  #payment-form .was-validated .form-control:invalid,
+  #payment-form .form-control.is-invalid {
+    border-color: #dc3545;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+  }
+  
+  #payment-form .payment-method-icons i {
+    font-size: 1.25rem;
+    transition: all 0.2s ease;
+  }
+  
+  #payment-form .payment-method-icons i:hover {
+    transform: translateY(-2px);
+    color: #ffc107 !important;
+  }
+  
+  #submit-payment {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  #payment-processing {
+    background: #ffc107;
+    color: #000;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+  }
+  
+  #submit-payment.processing #payment-processing {
+    transform: translateY(0);
+  }
+  
+  #submit-payment.processing #button-text {
+    transform: translateY(-100%);
+  }
+  .StripeElement {
+    box-sizing: border-box;
+    height: 40px;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: white;
+    box-shadow: 0 1px 3px 0 #e6ebf1;
+    transition: box-shadow 150ms ease;
+  }
+  
+  .StripeElement--focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+  
+  .StripeElement--invalid {
+    border-color: #fa755a;
+  }
+  
+  .payment-method {
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  
+  .payment-method:hover {
+    opacity: 1;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .payment-method-tabs {
+      flex-direction: column;
+    }
+    
+    .stepper-wrapper {
+      flex-wrap: wrap;
+    }
+    
+    .stepper-item {
+      flex: 0 0 50%;
+      margin-bottom: 15px;
+    }
+    
+    .stepper-item::before,
+    .stepper-item::after {
+      display: none;
+    }
+  }
+  
+  /* Modal custom styles */
+  .modal-lg {
+    max-width: 800px;
+  }
+  
+  .modal-header {
+    padding: 1.5rem 2rem;
+  }
+  
+  .modal-body {
+    padding: 0;
+  }
+  
+  .bg-light {
+    background-color: #f8f9fa !important;
+  }
+  
+  .text-white-75 {
+    color: rgba(255, 255, 255, 0.75);
+  }
+  
+  .payment-option {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .payment-option:hover {
+    border-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.03);
+  }
+  
+  .payment-option.active {
+    border-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.05);
+  }
+  
+  .payment-option i {
+    font-size: 24px;
+    margin-right: 10px;
+    color: #6c757d;
+  }
+  
+  .payment-option.active i {
+    color: #0d6efd;
+  }
+  
+  .payment-option .form-check-input {
+    margin-top: 0.3em;
+  }
+  
+  .nav-pills .nav-link {
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: #495057;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+  }
+  
+  .nav-pills .nav-link.active {
+    color: #fff;
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+  }
+  
+  .nav-pills .nav-link i {
+    margin-right: 0.25rem;
+  }
+  
+  /* Loading spinner */
+  .spinner-border {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+  }
+  
+  /* Form validation */
+  .was-validated .form-control:invalid,
+  .form-control.is-invalid {
+    border-color: #dc3545;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+  }
+  
+  .was-validated .form-control:valid,
+  .form-control.is-valid {
+    border-color: #198754;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+  }
+  
+  .invalid-feedback {
+    display: none;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #dc3545;
+  }
+  
+  .was-validated .form-control:invalid ~ .invalid-feedback,
+  .was-validated .form-control:invalid ~ .invalid-tooltip,
+  .form-control.is-invalid ~ .invalid-feedback,
+  .form-control.is-invalid ~ .invalid-tooltip {
+    display: block;
+  }
+  
+  /* Custom checkbox */
+  .form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+  }
+  
+  .form-check-input:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+  
+  /* Custom scrollbar for modal */
+  .modal-body {
+    scrollbar-width: thin;
+    scrollbar-color: #adb5bd #f8f9fa;
+  }
+  
+  .modal-body::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .modal-body::-webkit-scrollbar-track {
+    background: #f8f9fa;
+  }
+  
+  .modal-body::-webkit-scrollbar-thumb {
+    background-color: #adb5bd;
+    border-radius: 4px;
+  }
+  
+  /* Animation for tab switching */
+  .tab-pane.fade:not(.show) {
+    display: none;
+  }
+  
+  .tab-pane.fade.show {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 576px) {
+    .modal-dialog {
+      margin: 0.5rem;
+    }
+    
+    .modal-content {
+      border-radius: 0.5rem;
+    }
+    
+    .modal-header {
+      padding: 1rem;
+    }
+    
+    .modal-body {
+      max-height: calc(100vh - 150px);
+      overflow-y: auto;
+    }
+  }
+</style>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+// Wait for the DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Stripe with your publishable key
+  const stripePublicKey = '{{ STRIPE_PUBLIC_KEY|default:"" }}';
+  let stripe = null;
+  let elements = null;
+  let card = null;
+  
+  if (stripePublicKey) {
+    stripe = Stripe(stripePublicKey);
+    elements = stripe.elements();
+  }
+  
+  // Initialize Stripe Elements when the card tab is shown
+  const cardTab = document.getElementById('card-tab');
+  if (cardTab) {
+    cardTab.addEventListener('shown.bs.tab', function() {
+      if (!elements) {
+        elements = stripe.elements();
+        
+        // Create a card Element
+        card = elements.create('card', {
+          style: {
+            base: {
+              fontSize: '16px',
+              color: '#32325d',
+              '::placeholder': {
+                color: '#aab7c4',
+              },
+            },
+            invalid: {
+              color: '#dc3545',
+              iconColor: '#dc3545',
+            },
+          },
+        });
+        
+        // Add an instance of the card Element into the `card-element` div
+        const cardElement = document.getElementById('card-element');
+        if (cardElement) {
+          card.mount('#card-element');
+
+          // Handle real-time validation errors from the card Element
+          card.on('change', function(event) {
+            const displayError = document.getElementById('card-errors');
+            if (event.error) {
+              displayError.textContent = event.error.message;
+            } else {
+              displayError.textContent = '';
+            }
+          });
+        }
+      }
+    });
+  }
+
+  // Handle form submission
+  const form = document.getElementById('payment-form');
+  if (form) {
+    form.addEventListener('submit', async function(event) {
+      event.preventDefault();
+      
+      const submitButton = document.getElementById('submit-payment');
+      const spinner = document.getElementById('spinner');
+      const buttonText = document.getElementById('button-text');
+      
+      if (!submitButton || !spinner || !buttonText) return;
+      
+      // Disable the submit button and show spinner
+      submitButton.disabled = true;
+      spinner.classList.remove('d-none');
+      buttonText.textContent = 'Processing...';
+      
+      try {
+        // Validate form
+        if (!form.checkValidity()) {
+          form.classList.add('was-validated');
+          throw new Error('Please fill in all required fields');
+        }
+        
+        // Get the active payment method
+        const activeTab = document.querySelector('.nav-pills .nav-link.active');
+        const paymentMethod = activeTab ? activeTab.getAttribute('aria-controls') : 'card-payment';
+        
+        if (paymentMethod === 'card-payment') {
+          // Handle card payment
+          if (!stripePublicKey) {
+            throw new Error('Card payments are not available at this time. Please try another payment method.');
+          }
+          
+          if (!stripe || !elements) {
+            throw new Error('Payment system is not properly initialized');
+          }
+          
+          // Create payment method and confirm payment
+          const {paymentMethod: stripePaymentMethod, error} = await stripe.createPaymentMethod({
+            type: 'card',
+            card: card,
+            billing_details: {
+              email: document.getElementById('billing-email').value,
+            },
+          });
+          
+          if (error) {
+            throw error;
+          }
+          
+          // Get course data from form attributes
+          const coursePrice = form.dataset.coursePrice;
+          const courseId = form.dataset.courseId || '{{ course.id|default:"" }}';
+          const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+          
+          if (!csrfToken) {
+            throw new Error('CSRF token not found');
+          }
+          
+          // Send payment method ID to your server
+          const response = await fetch('/payment/process/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({
+              payment_method_id: stripePaymentMethod.id,
+              course_id: courseId,
+              amount: coursePrice,
+            }),
+          });
+          
+          const paymentResponse = await response.json();
+          
+          if (paymentResponse.error) {
+            throw new Error(paymentResponse.error);
+          }
+          
+          // Get course ID from form data
+          const successCourseId = form.dataset.courseId || '{{ course.id|default:"" }}';
+          
+          // Redirect to course detail page on successful payment
+          if (successCourseId) {
+            window.location.href = `/courses/${successCourseId}/`;
+          } else {
+            window.location.href = '/courses/';
+          }
+          
+        } else if (paymentMethod === 'paypal-payment') {
+          // Handle PayPal payment
+          // This would be replaced with actual PayPal integration
+          throw new Error('PayPal integration is not implemented yet');
+          
+        } else if (paymentMethod === 'upi-payment') {
+          // Handle UPI payment
+          // This would be replaced with actual UPI integration
+          throw new Error('UPI integration is not implemented yet');
+        }
+        
+      } catch (error) {
+        // Show error to customer
+        const errorElement = document.getElementById('card-errors') || document.createElement('div');
+        if (errorElement) {
+          errorElement.textContent = error.message || 'An error occurred. Please try again.';
+          errorElement.style.color = '#dc3545';
+          errorElement.style.fontSize = '0.875rem';
+          errorElement.style.marginTop = '0.5rem';
+          
+          // If error element is not already in the DOM, insert it
+          if (!errorElement.parentNode) {
+            const submitButton = document.getElementById('submit-payment');
+            if (submitButton && submitButton.parentNode) {
+              submitButton.parentNode.insertBefore(errorElement, submitButton.nextSibling);
+            }
+          }
+        }
+        
+        // Re-enable the submit button
+        if (submitButton && spinner && buttonText) {
+          submitButton.disabled = false;
+          spinner.classList.add('d-none');
+          buttonText.textContent = 'Pay ₹' + (form?.dataset.coursePrice || '0.00');
+        }
+      }
+    });
+  }
+  
+  // Handle payment method tab switching
+  const paymentTabs = document.querySelectorAll('[data-bs-toggle="pill"]');
+  paymentTabs.forEach(tab => {
+    tab.addEventListener('click', function(event) {
+      // Update active tab styling
+      paymentTabs.forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      
+      // Update form action based on selected payment method
+      const paymentMethod = this.getAttribute('aria-controls');
+      if (paymentMethod) {
+        // Update any relevant UI elements based on the selected payment method
+        console.log('Selected payment method:', paymentMethod);
+      }
+    });
+  });
+  
+  // Handle terms and conditions checkbox
+  const termsCheck = document.getElementById('termsCheck');
+  const submitButton = document.getElementById('submit-payment');
+  if (termsCheck && submitButton) {
+    termsCheck.addEventListener('change', function() {
+      submitButton.disabled = !this.checked;
+    });
+    
+    // Initially disable the submit button if terms are not accepted
+    submitButton.disabled = !termsCheck.checked;
+  }
+  
+  // Auto-focus email field when modal is shown
+  const paymentModal = document.getElementById('paymentModal');
+  if (paymentModal) {
+    paymentModal.addEventListener('shown.bs.modal', function() {
+      const emailField = document.getElementById('billing-email');
+      if (emailField) {
+        emailField.focus();
+      }
+    });
+  }
+  
+  // Initialize form validation
+  (function() {
+    'use strict';
+    
+    // Fetch all the forms we want to apply custom Bootstrap validation styles to
+    const forms = document.querySelectorAll('.needs-validation');
+    
+    // Loop over them and prevent submission
+    Array.prototype.slice.call(forms).forEach(function(form) {
+      form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        
+        form.classList.add('was-validated');
+      }, false);
+    });
+  })();
+})(); // End of IIFE
+</script>
+
+<script>
+  // Combine all DOMContentLoaded functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    // Handle header image with fallback
+    const header = document.querySelector('.course-header');
+    if (header) {
+      const headerImage = header.dataset.headerImage;
+      const fallbackImage = header.dataset.fallbackImage;
+      
+      // Create image to test if header image loads
+      const testImg = new Image();
+      testImg.onload = function() {
+        // If image loads successfully, set it as background
+        header.style.background = `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('${headerImage}')`;
+        header.style.backgroundSize = 'cover';
+        header.style.backgroundPosition = 'center';
+      };
+      testImg.onerror = function() {
+        // If image fails to load, use fallback
+        header.style.background = `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('${fallbackImage}')`;
+        header.style.backgroundSize = 'cover';
+        header.style.backgroundPosition = 'center';
+      };
+      testImg.src = headerImage;
+    }
+    
+    // Auto-scroll to active tab on page load
+    const activeTab = document.querySelector('.nav-link.active');
+    if (activeTab) {
+      activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+    
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Handle video previews
+    const videoPreviews = document.querySelectorAll('[data-bs-toggle="collapse"]');
+    videoPreviews.forEach(preview => {
+      preview.addEventListener('click', function() {
+        const targetId = this.getAttribute('data-bs-target');
+        const targetVideo = document.querySelector(targetId + ' iframe');
+        if (targetVideo) {
+          // Pause all other videos
+          document.querySelectorAll('iframe').forEach(video => {
+            if (video !== targetVideo) {
+              const src = video.src;
+              video.src = src; // Reset the iframe to stop video playback
+            }
+          });
+          
+          // Update the current video source to ensure it plays
+          const currentSrc = targetVideo.src;
+          targetVideo.src = currentSrc;
+        }
+      });
+    });
+    
+    // Enrollment button click is now handled by the link's href attribute
+  });
+  
+  // Video Player Module
+  (function() {
+    // Video Player State
+    const videoState = {
+    currentVideoId: null,
+    videos: {},
+    watchedVideos: new Set(JSON.parse(localStorage.getItem('watchedVideos') || '[]')),
+    currentTime: 0,
+    duration: 0,
+    isPlaying: false,
+    isFullscreen: false,
+    currentSpeed: 1,
+    isDarkMode: localStorage.getItem('darkMode') === 'true',
+    autoplayNext: true
+  };
+
+  // DOM Elements
+  const elements = {
+    mainVideoPlayer: document.getElementById('mainVideoPlayer'),
+    videoFrame: document.getElementById('mainVideoFrame'),
+    videoTitle: document.getElementById('videoTitle'),
+    currentVideoTitle: document.getElementById('currentVideoTitle'),
+    currentVideoInfo: document.getElementById('currentVideoInfo'),
+    progressBar: document.getElementById('progressBar'),
+    progressContainer: document.getElementById('progressContainer'),
+    currentTimeEl: document.getElementById('currentTime'),
+    durationEl: document.getElementById('duration'),
+    playPauseBtn: document.getElementById('playPauseBtn'),
+    fullscreenBtn: document.getElementById('fullscreenBtn'),
+    themeToggle: document.getElementById('themeToggle'),
+    transcriptBtn: document.getElementById('transcriptBtn'),
+    transcriptPanel: document.getElementById('transcriptPanel'),
+    closeTranscript: document.getElementById('closeTranscript'),
+    speedOptions: document.querySelectorAll('.speed-option'),
+    currentSpeedEl: document.getElementById('currentSpeed'),
+    expandAllSections: document.getElementById('expandAllSections'),
+    autoplayNext: document.getElementById('autoplayNext'),
+    downloadBtn: document.getElementById('downloadBtn'),
+    downloadHdBtn: document.getElementById('downloadHdBtn'),
+    reportIssue: document.getElementById('reportIssue')
+  };
+
+  // Initialize video player
+  function initVideoPlayer() {
+    // Set initial theme
+    if (videoState.isDarkMode) {
+      document.documentElement.setAttribute('data-bs-theme', 'dark');
+      elements.themeToggle.innerHTML = '<i class="bi bi-sun"></i>';
+    }
+
+    // Set up event listeners
+    setupEventListeners();
+    
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+    
+    // Initialize video data
+    initVideoData();
+    
+    // Check for autoplay setting
+    if (localStorage.getItem('autoplayNext') !== null) {
+      videoState.autoplayNext = localStorage.getItem('autoplayNext') === 'true';
+      elements.autoplayNext.checked = videoState.autoplayNext;
+    }
+  }
+
+  // Set up all event listeners
+  function setupEventListeners() {
+    // Video controls
+    elements.playPauseBtn.addEventListener('click', togglePlayPause);
+    elements.fullscreenBtn.addEventListener('click', toggleFullscreen);
+    elements.themeToggle.addEventListener('click', toggleTheme);
+    elements.transcriptBtn.addEventListener('click', toggleTranscript);
+    elements.closeTranscript.addEventListener('click', toggleTranscript);
+    elements.progressContainer.addEventListener('click', seek);
+    elements.expandAllSections.addEventListener('click', toggleExpandAllSections);
+    elements.autoplayNext.addEventListener('change', toggleAutoplay);
+    
+    // Speed options
+    elements.speedOptions.forEach(option => {
+      option.addEventListener('click', (e) => {
+        e.preventDefault();
+        setPlaybackSpeed(parseFloat(e.target.dataset.speed));
+      });
+    });
+    
+    // Video frame events
+    window.addEventListener('message', handleVideoMessage, false);
+    
+    // Fullscreen change events
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    
+    // Before unload - save state
+    window.addEventListener('beforeunload', saveVideoState);
+  }
+
+  // Initialize video data from the page
+  function initVideoData() {
+    const videoItems = document.querySelectorAll('.video-item');
+    videoItems.forEach(item => {
+      const videoId = item.dataset.videoId;
+      videoState.videos[videoId] = {
+        element: item,
+        progress: 0,
+        completed: false
+      };
+      
+      // Mark as watched if in storage
+      if (videoState.watchedVideos.has(videoId)) {
+        markVideoAsWatched(videoId);
+      }
+    });
+    
+    // Update section completion counts
+    updateSectionCompletion();
+  }
+
+  // Play video in the main player
+  function playVideo(videoUrl, title, videoId) {
+    const videoFrame = elements.videoFrame;
+    
+    // Show loading state
+    document.getElementById('videoLoader').style.display = 'block';
+    
+    // Update UI
+    elements.videoTitle.textContent = title;
+    elements.currentVideoTitle.textContent = title;
+    elements.mainVideoPlayer.style.display = 'block';
+    elements.currentVideoInfo.classList.remove('d-none');
+    
+    // Update video state
+    if (videoState.currentVideoId) {
+      // Save progress of previous video
+      saveVideoProgress(videoState.currentVideoId, videoState.currentTime / videoState.duration);
+    }
+    
+    videoState.currentVideoId = videoId;
+    videoState.isPlaying = true;
+    
+    // Update active video in the list
+    updateActiveVideo(videoId);
+    
+    // Set video source and play
+    videoFrame.onload = function() {
+      document.getElementById('videoLoader').style.display = 'none';
+      // The YouTube API will handle the rest through postMessage
+    };
+    
+    videoFrame.src = videoUrl;
+    
+    // Scroll to player
+    elements.mainVideoPlayer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    
+    // Mark as watched after 90% of the video is watched
+    setTimeout(() => {
+      if (videoState.currentTime / videoState.duration >= 0.9) {
+        markVideoAsWatched(videoId);
+      }
+    }, 1000);
+  }
+  
+  // Toggle video preview
+  function togglePreview(videoUrl, title, videoId) {
+    const preview = document.getElementById(`preview-${videoId}`);
+    const previewContainer = document.getElementById(`video-${videoId}`);
+    const bsCollapse = new bootstrap.Collapse(previewContainer, { toggle: true });
+    
+    previewContainer.addEventListener('shown.bs.collapse', function() {
+      if (!preview.src || !preview.src.includes('youtube.com/embed/')) {
+        preview.src = videoUrl;
+      }
+    });
+    
+    previewContainer.addEventListener('hidden.bs.collapse', function() {
+      const src = preview.src;
+      preview.src = ''; // Stop video when collapsing
+      preview.src = src; // Reset source for next time
+    });
+  }
+  
+  // Update active video in the list
+  function updateActiveVideo(videoId) {
+    // Remove active class from all videos
+    document.querySelectorAll('.video-item').forEach(item => {
+      item.classList.remove('active');
+    });
+    
+    // Add active class to current video
+    const currentVideo = document.querySelector(`.video-item[data-video-id="${videoId}"]`);
+    if (currentVideo) {
+      currentVideo.classList.add('active');
+      currentVideo.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+  
+  // Mark video as watched
+  function markVideoAsWatched(videoId) {
+    if (!videoState.watchedVideos.has(videoId)) {
+      videoState.watchedVideos.add(videoId);
+      localStorage.setItem('watchedVideos', JSON.stringify(Array.from(videoState.watchedVideos)));
+      
+      const videoItem = document.querySelector(`.video-item[data-video-id="${videoId}"]`);
+      if (videoItem) {
+        videoItem.classList.add('watched');
+        const checkIcon = videoItem.querySelector('.position-relative .position-absolute');
+        if (checkIcon) checkIcon.style.display = 'block';
+        
+        // Update progress to 100%
+        const progressBar = videoItem.querySelector('.progress-bar');
+        if (progressBar) progressBar.style.width = '100%';
+        
+        // Update section completion
+        updateSectionCompletion();
+      }
+    }
+  }
+  
+  // Update section completion counts
+  function updateSectionCompletion() {
+    document.querySelectorAll('.accordion-item').forEach(section => {
+      const videos = section.querySelectorAll('.video-item');
+      const completedVideos = section.querySelectorAll('.video-item.watched');
+      const completionBadge = section.querySelector('.completion-badge');
+      
+      if (completionBadge) {
+        completionBadge.textContent = `${completedVideos.length}/${videos.length} completed`;
+      }
+    });
+  }
+  
+  // Toggle play/pause
+  function togglePlayPause() {
+    if (videoState.isPlaying) {
+      elements.videoFrame.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+      elements.playPauseBtn.innerHTML = '<i class="bi bi-play-fill" style="font-size: 1.25rem;"></i>';
+    } else {
+      elements.videoFrame.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+      elements.playPauseBtn.innerHTML = '<i class="bi bi-pause-fill" style="font-size: 1.25rem;"></i>';
+    }
+    videoState.isPlaying = !videoState.isPlaying;
+  }
+  
+  // Toggle fullscreen
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      if (elements.mainVideoPlayer.requestFullscreen) {
+        elements.mainVideoPlayer.requestFullscreen();
+      } else if (elements.mainVideoPlayer.webkitRequestFullscreen) {
+        elements.mainVideoPlayer.webkitRequestFullscreen();
+      } else if (elements.mainVideoPlayer.msRequestFullscreen) {
+        elements.mainVideoPlayer.msRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    }
+  }
+  
+  // Toggle theme
+  function toggleTheme() {
+    videoState.isDarkMode = !videoState.isDarkMode;
+    if (videoState.isDarkMode) {
+      document.documentElement.setAttribute('data-bs-theme', 'dark');
+      elements.themeToggle.innerHTML = '<i class="bi bi-sun"></i>';
+    } else {
+      document.documentElement.removeAttribute('data-bs-theme');
+      elements.themeToggle.innerHTML = '<i class="bi bi-moon-stars"></i>';
+    }
+    localStorage.setItem('darkMode', videoState.isDarkMode);
+  }
+  
+  // Toggle transcript
+  function toggleTranscript() {
+    elements.transcriptPanel.style.display = elements.transcriptPanel.style.display === 'none' ? 'block' : 'none';
+  }
+  
+  // Toggle expand all sections
+  function toggleExpandAllSections() {
+    const isExpanded = elements.expandAllSections.innerHTML.includes('Expand');
+    const collapseElements = document.querySelectorAll('.accordion-collapse');
+    
+    if (isExpanded) {
+      collapseElements.forEach(el => {
+        new bootstrap.Collapse(el, { show: true });
+      });
+      elements.expandAllSections.innerHTML = '<i class="bi bi-arrows-angle-contract me-1"></i>Collapse All';
+    } else {
+      collapseElements.forEach(el => {
+        new bootstrap.Collapse(el, { hide: true });
+      });
+      elements.expandAllSections.innerHTML = '<i class="bi bi-arrows-angle-expand me-1"></i>Expand All';
+    }
+  }
+  
+  // Toggle autoplay
+  function toggleAutoplay() {
+    videoState.autoplayNext = elements.autoplayNext.checked;
+    localStorage.setItem('autoplayNext', videoState.autoplayNext);
+  }
+  
+  // Set playback speed
+  function setPlaybackSpeed(speed) {
+    elements.videoFrame.contentWindow.postMessage(`{"event":"command","func":"setPlaybackRate","args":[${speed}]}`, '*');
+    videoState.currentSpeed = speed;
+    elements.currentSpeedEl.textContent = `${speed}x`;
+    
+    // Update active state in speed options
+    elements.speedOptions.forEach(option => {
+      if (parseFloat(option.dataset.speed) === speed) {
+        option.classList.add('active');
+      } else {
+        option.classList.remove('active');
+      }
+    });
+  }
+  
+  // Handle seek on progress bar click
+  function seek(e) {
+    const rect = elements.progressContainer.getBoundingClientRect();
+    const pos = (e.clientX - rect.left) / rect.width;
+    const time = pos * videoState.duration;
+    elements.videoFrame.contentWindow.postMessage(`{"event":"command","func":"seekTo","args":[${time}, true]}`, '*');
+  }
+  
+  // Handle video messages (from YouTube iframe)
+  function handleVideoMessage(event) {
+    // Handle messages from YouTube iframe
+    if (event.origin !== 'https://www.youtube.com') return;
+    
+    try {
+      const data = JSON.parse(event.data);
+      
+      switch (data.event) {
+        case 'onStateChange':
+          if (data.info === 0) {
+            // Video ended
+            handleVideoEnded();
+          } else if (data.info === 1) {
+            // Video started playing
+            videoState.isPlaying = true;
+            elements.playPauseBtn.innerHTML = '<i class="bi bi-pause-fill" style="font-size: 1.25rem;"></i>';
+          } else if (data.info === 2) {
+            // Video paused
+            videoState.isPlaying = false;
+            elements.playPauseBtn.innerHTML = '<i class="bi bi-play-fill" style="font-size: 1.25rem;"></i>';
+          }
+          break;
+          
+        case 'onReady':
+          // Video is ready
+          document.getElementById('videoLoader').style.display = 'none';
+          break;
+          
+        case 'infoDelivery':
+          // Update progress and duration
+          if (data.info.currentTime !== undefined) {
+            videoState.currentTime = data.info.currentTime;
+            elements.currentTimeEl.textContent = formatTime(data.info.currentTime);
+          }
+          
+          if (data.info.duration !== undefined) {
+            videoState.duration = data.info.duration;
+            elements.durationEl.textContent = formatTime(data.info.duration);
+          }
+          
+          if (data.info.currentTime !== undefined && data.info.duration !== undefined) {
+            const progress = (data.info.currentTime / data.info.duration) * 100;
+            elements.progressBar.style.width = `${progress}%`;
+            
+            // Auto-mark as watched at 90%
+            if (progress >= 90 && videoState.currentVideoId) {
+              markVideoAsWatched(videoState.currentVideoId);
+            }
+          }
+          break;
+      }
+    } catch (e) {
+      // Ignore non-JSON messages
+    }
+  }
+  
+  // Handle video ended
+  function handleVideoEnded() {
+    if (videoState.currentVideoId) {
+      markVideoAsWatched(videoState.currentVideoId);
+      
+      // Autoplay next video if enabled
+      if (videoState.autoplayNext) {
+        const nextVideo = document.querySelector(`.video-item[data-video-id="${videoState.currentVideoId}"]`).nextElementSibling;
+        if (nextVideo && nextVideo.classList.contains('video-item')) {
+          const videoId = nextVideo.dataset.videoId;
+          const videoTitle = nextVideo.querySelector('h6').textContent.trim();
+          const videoUrl = nextVideo.onclick.toString().match(/'([^']+)'/)[1];
+          playVideo(videoUrl, videoTitle, videoId);
+        }
+      }
+    }
+  }
+  
+  // Handle fullscreen change
+  function handleFullscreenChange() {
+    videoState.isFullscreen = !videoState.isFullscreen;
+    elements.fullscreenBtn.innerHTML = videoState.isFullscreen ? 
+      '<i class="bi bi-fullscreen-exit"></i>' : 
+      '<i class="bi bi-arrows-fullscreen"></i>';
+  }
+  
+  // Save video progress
+  function saveVideoProgress(videoId, progress) {
+    if (videoState.videos[videoId]) {
+      videoState.videos[videoId].progress = progress;
+      const progressBar = document.querySelector(`.video-item[data-video-id="${videoId}"] .progress-bar`);
+      if (progressBar) progressBar.style.width = `${progress * 100}%`;
+    }
+  }
+  
+  // Save video state before unload
+  function saveVideoState() {
+    if (videoState.currentVideoId) {
+      const progress = videoState.currentTime / videoState.duration;
+      saveVideoProgress(videoState.currentVideoId, progress);
+    }
+  }
+  
+  // Format time (seconds to MM:SS)
+  function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  }
+  
+    // Initialize the player when the DOM is loaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initVideoPlayer);
+    } else {
+      initVideoPlayer();
+    }
+  })();
+  
+  // Handle share buttons
+  function shareOnSocial(platform) {
+    const url = window.location.href;
+    const title = document.title;
+    let shareUrl = '';
+    
+    switch(platform) {
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+        break;
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`;
+        break;
+      case 'linkedin':
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(url).then(() => {
+          // Show copied tooltip
+          const copyBtn = document.querySelector('[data-bs-original-title="Copy link"]');
+          const tooltip = bootstrap.Tooltip.getInstance(copyBtn);
+          const originalTitle = copyBtn.getAttribute('data-bs-original-title');
+          copyBtn.setAttribute('data-bs-original-title', 'Link copied!');
+          tooltip.show();
+          
+          // Reset tooltip after 2 seconds
+          setTimeout(() => {
+            copyBtn.setAttribute('data-bs-original-title', originalTitle);
+            tooltip.hide();
+          }, 2000);
+        });
+        return;
+    }
+    
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+  }
+</script>
+{% endblock %}
+
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="loginModalLabel">Sign In to Continue</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-4">You need to be logged in to enroll in this course.</p>
+        
+        <!-- Login Form -->
+        <form method="post" action="{% url 'login' %}?next={% url 'courseplatform:payment' %}?course_id={{ course.id }}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 mb-3">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+          </button>
+        </form>
+        
+        <div class="text-center">
+          <p class="mb-0">
+            Don't have an account? 
+            <a href="{% url 'register' %}">Sign up</a>
+          </p>
+          <p class="mb-0 mt-2">
+            <a href="{% url 'password_reset' %}">Forgot your password?</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

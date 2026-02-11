@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ course.title }} - Students - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stat-card {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    border: none;
+  }
+  .student-card {
+    transition: transform 0.2s;
+    border-left: 4px solid #0d6efd;
+  }
+  .student-card:hover {
+    transform: translateX(5px);
+  }
+  .status-badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+  }
+  .filter-btn {
+    border-radius: 20px;
+    margin: 0 5px 10px 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Back to Dashboard -->
+  <div class="mb-4">
+    <a href="{% url 'courseplatform:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+  
+  <!-- Course Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="mb-1">{{ course.title }}</h2>
+      <p class="text-muted">Manage and view student enrollments</p>
+    </div>
+  </div>
+  
+  <!-- Stats Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card stat-card bg-primary text-white">
+        <div class="card-body">
+          <h5 class="card-title">{{ stats.total }}</h5>
+          <p class="card-text mb-0">Total Students</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card bg-success text-white">
+        <div class="card-body">
+          <h5 class="card-title">{{ stats.active }}</h5>
+          <p class="card-text mb-0">Active Students</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card bg-info text-white">
+        <div class="card-body">
+          <h5 class="card-title">{{ stats.completed }}</h5>
+          <p class="card-text mb-0">Completed</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card bg-warning text-white">
+        <div class="card-body">
+          <h5 class="card-title">{{ stats.dropped }}</h5>
+          <p class="card-text mb-0">Dropped</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Filters -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Filters</h5>
+      <div class="d-flex flex-wrap">
+        <a href="?" class="btn btn-sm filter-btn {% if not current_status %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+          All Students
+        </a>
+        <a href="?status=active" class="btn btn-sm filter-btn {% if current_status == 'active' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+          Active
+        </a>
+        <a href="?status=completed" class="btn btn-sm filter-btn {% if current_status == 'completed' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+          Completed
+        </a>
+        <a href="?status=dropped" class="btn btn-sm filter-btn {% if current_status == 'dropped' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+          Dropped
+        </a>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Students List -->
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">
+        {% if current_status %}
+          {{ current_status|title }} Students
+        {% else %}
+          All Enrolled Students
+        {% endif %}
+        <span class="badge bg-secondary">{{ enrollments|length }}</span>
+      </h5>
+      <button class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-download"></i> Export
+      </button>
+    </div>
+    <div class="card-body p-0">
+      {% if enrollments %}
+        <div class="list-group list-group-flush">
+          {% for enrollment in enrollments %}
+            <div class="list-group-item student-card">
+              <div class="row align-items-center">
+                <div class="col-md-4">
+                  <div class="d-flex align-items-center">
+                    <div class="me-3">
+                      <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        {{ enrollment.student.first_name|first|upper }}{{ enrollment.student.last_name|first|upper }}
+                      </div>
+                    </div>
+                    <div>
+                      <h6 class="mb-0">{{ enrollment.student.get_full_name|default:enrollment.student.username }}</h6>
+                      <small class="text-muted">{{ enrollment.student.email }}</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <span class="badge status-badge 
+                    {% if enrollment.status == 'active' %}bg-success
+                    {% elif enrollment.status == 'completed' %}bg-primary
+                    {% else %}bg-secondary{% endif %}">
+                    {{ enrollment.get_status_display }}
+                  </span>
+                </div>
+                <div class="col-md-3">
+                  <small class="text-muted">Enrolled</small>
+                  <div>{{ enrollment.enrolled_at|date:"M d, Y" }}</div>
+                </div>
+                <div class="col-md-2 text-end">
+                  <a href="#" class="btn btn-sm btn-outline-primary">View</a>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center p-5">
+          <i class="bi bi-people display-4 text-muted mb-3"></i>
+          <p class="lead mb-0">No students found</p>
+          {% if current_status %}
+            <p class="text-muted">No students with status '{{ current_status }}' found for this course.</p>
+          {% else %}
+            <p class="text-muted">No students are enrolled in this course yet.</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

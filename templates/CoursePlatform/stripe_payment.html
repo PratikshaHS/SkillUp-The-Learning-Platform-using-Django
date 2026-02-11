@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+  .payment-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 3rem 0;
+  }
+  
+  .payment-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+  }
+  
+  .payment-header {
+    background: linear-gradient(135deg, #6e8efb, #a777e3);
+    color: white;
+    padding: 1.5rem 2rem;
+    text-align: center;
+  }
+  
+  .payment-body {
+    padding: 2.5rem;
+  }
+  
+  .payment-summary {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .course-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .total-amount {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid #dee2e6;
+  }
+  
+  /* Stripe Element styles */
+  .StripeElement {
+    box-sizing: border-box;
+    height: 40px;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: white;
+    box-shadow: 0 1px 3px 0 #e6ebf1;
+    -webkit-transition: box-shadow 150ms ease;
+    transition: box-shadow 150ms ease;
+  }
+
+  .StripeElement--focus {
+    box-shadow: 0 1px 3px 0 #cfd7df;
+    border-color: #667eea;
+  }
+
+  .StripeElement--invalid {
+    border-color: #fa755a;
+  }
+
+  .StripeElement--webkit-autofill {
+    background-color: #fefde5 !important;
+  }
+  
+  #card-errors {
+    color: #fa755a;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
+  
+  #submit-payment {
+    margin-top: 1.5rem;
+    width: 100%;
+  }
+  
+  .secure-payment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1.5rem;
+    color: #6c757d;
+    font-size: 0.875rem;
+  }
+  
+  .secure-payment i {
+    margin-right: 0.5rem;
+    color: #28a745;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-container">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12">
+        <div class="payment-card">
+          <!-- Header -->
+          <div class="payment-header">
+            <h2>Complete Your Purchase</h2>
+            <p class="mb-0">Securely complete your payment</p>
+          </div>
+          
+          <div class="payment-body">
+            <div class="row">
+              <!-- Order Summary -->
+              <div class="col-md-5 mb-4">
+                <h5 class="mb-3">Order Summary</h5>
+                <div class="payment-summary">
+                  <div class="course-item">
+                    <span>{{ course.title }}</span>
+                    <span>₹{{ course.discount_price|default:course.price|floatformat:2 }}</span>
+                  </div>
+                  {% if course.discount_price %}
+                  <div class="course-item text-danger">
+                    <span>Discount</span>
+                    <span>-₹{{ course.price|sub:course.discount_price|floatformat:2 }}</span>
+                  </div>
+                  {% endif %}
+                  <div class="total-amount">
+                    <span>Total</span>
+                    <span>₹{{ course.discount_price|default:course.price|floatformat:2 }}</span>
+                  </div>
+                </div>
+                
+                <div class="secure-payment">
+                  <i class="bi bi-shield-lock"></i>
+                  <span>Secure SSL Encryption</span>
+                </div>
+              </div>
+              
+              <!-- Payment Form -->
+              <div class="col-md-7">
+                <h5 class="mb-3">Payment Method</h5>
+                
+                <!-- Stripe Card Element -->
+                <form id="payment-form">
+                  <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" value="{{ user.email }}" readonly>
+                  </div>
+                  
+                  <div class="mb-3">
+                    <label class="form-label">Card Information</label>
+                    <div id="card-element" class="form-control p-2">
+                      <!-- A Stripe Element will be inserted here. -->
+                    </div>
+                    <!-- Used to display form errors. -->
+                    <div id="card-errors" role="alert"></div>
+                  </div>
+                  
+                  <button class="btn btn-primary btn-lg w-100" id="submit-payment">
+                    <span id="button-text">Pay ₹{{ course.discount_price|default:course.price|floatformat:2 }}</span>
+                    <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                  </button>
+                  
+                  <div class="text-center mt-3">
+                    <img src="{% static 'images/powered-by-stripe.png' %}" alt="Powered by Stripe" style="height: 30px;">
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Load Stripe.js -->
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+// Set your publishable key
+const stripe = Stripe('{{ STRIPE_PUBLIC_KEY }}');
+
+// Create an instance of Elements
+const elements = stripe.elements();
+
+// Custom styling can be passed to options when creating an Element
+const style = {
+  base: {
+    color: '#32325d',
+    fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+    fontSmoothing: 'antialiased',
+    fontSize: '16px',
+    '::placeholder': {
+      color: '#aab7c4'
+    }
+  },
+  invalid: {
+    color: '#fa755a',
+    iconColor: '#fa755a'
+  }
+};
+
+// Create an instance of the card Element
+const card = elements.create('card', {style: style});
+
+// Add an instance of the card Element into the `card-element` <div>
+card.mount('#card-element');
+
+// Handle real-time validation errors from the card Element
+card.on('change', function(event) {
+  const displayError = document.getElementById('card-errors');
+  if (event.error) {
+    displayError.textContent = event.error.message;
+  } else {
+    displayError.textContent = '';
+  }
+});
+
+// Handle form submission
+const form = document.getElementById('payment-form');
+form.addEventListener('submit', async function(event) {
+  event.preventDefault();
+  
+  const submitButton = document.getElementById('submit-payment');
+  const buttonText = document.getElementById('button-text');
+  const spinner = document.getElementById('spinner');
+  
+  // Disable the submit button to prevent repeated clicks
+  submitButton.disabled = true;
+  buttonText.textContent = 'Processing...';
+  spinner.classList.remove('d-none');
+  
+  // Clear any previous errors
+  const errorElement = document.getElementById('card-errors');
+  errorElement.textContent = '';
+  
+  try {
+    // Create payment method and get payment method id
+    const { paymentMethod, error: paymentMethodError } = await stripe.createPaymentMethod({
+      type: 'card',
+      card: card,
+      billing_details: {
+        email: document.getElementById('email').value,
+      },
+    });
+    
+    if (paymentMethodError) {
+      throw new Error(paymentMethodError.message);
+    }
+    
+    // Send payment method ID to server
+    const response = await fetch('{% url "courseplatform:process_payment" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}',
+      },
+      body: JSON.stringify({
+        payment_method_id: paymentMethod.id,
+        course_id: '{{ course.id }}',
+      }),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Payment failed');
+    }
+    
+    if (data.requires_action) {
+      // Handle 3D Secure authentication
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        data.client_secret
+      );
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      if (paymentIntent.status === 'succeeded') {
+        // Redirect to success page
+        window.location.href = data.redirect_url || '{% url "courseplatform:course_detail" course.id %}';
+      }
+    } else if (data.redirect_url) {
+      // Redirect to success page
+      window.location.href = data.redirect_url;
+    } else {
+      throw new Error('An unknown error occurred');
+    }
+  } catch (error) {
+    // Show error to customer
+    errorElement.textContent = error.message || 'An error occurred while processing your payment.';
+    
+    // Re-enable the submit button
+    submitButton.disabled = false;
+    buttonText.textContent = 'Pay ₹{{ course.discount_price|default:course.price|floatformat:2 }}';
+    spinner.classList.add('d-none');
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">Payment Successful! 🎉</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
+                    </div>
+                    <h4 class="card-title">Thank you for your purchase!</h4>
+                    <p class="card-text">You have been successfully enrolled in <strong>{{ course.title }}</strong>.</p>
+                    <p class="card-text">An email confirmation has been sent to <strong>{{ user.email }}</strong>.</p>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'courseplatform:course_detail' course.id %}" class="btn btn-primary btn-lg">
+                            Go to Course
+                        </a>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-lg ms-2">
+                            My Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

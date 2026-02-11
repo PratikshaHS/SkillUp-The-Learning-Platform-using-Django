@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block title %}Course Catalog - SkillUp - The Learning Platform{% endblock %}
+
+{% block extra_css %}
+<!-- AOS Animation -->
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+<style>
+  /* Course Card Styles */
+  .course-card {
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+  
+  .course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1.5rem 0 rgba(58, 59, 69, 0.2) !important;
+  }
+  
+  .course-thumbnail {
+    height: 180px;
+    object-fit: cover;
+    width: 100%;
+  }
+  
+  /* Search and Filter Styles */
+  .search-box {
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+  
+  .search-box .form-control {
+    padding-left: 3rem;
+    border-radius: 2rem;
+    height: 3rem;
+    border: 2px solid #e9ecef;
+  }
+  
+  .search-box i {
+    position: absolute;
+    left: 1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+  }
+  
+  /* Level Badges */
+  .level-beginner {
+    background-color: rgba(40, 167, 69, 0.15);
+    color: #28a745;
+  }
+  
+  .level-intermediate {
+    background-color: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+  }
+  
+  .level-advanced {
+    background-color: rgba(220, 53, 69, 0.15);
+    color: #dc3545;
+  }
+  
+  /* Responsive Adjustments */
+  @media (max-width: 767.98px) {
+    .course-thumbnail {
+      height: 160px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" id="courseList">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Course Catalog</h1>
+    <a href="{% url 'courseplatform:course_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i> Add New Course
+    </a>
+  </div>
+  
+  <!-- Search and Filter -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+      <form method="get" class="row g-3" id="courseFilterForm">
+        <div class="col-md-6">
+          <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input type="text" class="form-control" name="search" placeholder="Search courses..." 
+                   value="{{ search|default:'' }}">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" name="level">
+            <option value="">All Levels</option>
+            {% for value, label in levels %}
+              <option value="{{ value }}" {% if level == value|stringformat:'s' %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" name="published">
+            <option value="">All Status</option>
+            <option value="true" {% if published == 'true' %}selected{% endif %}>Published</option>
+            <option value="false" {% if published == 'false' %}selected{% endif %}>Draft</option>
+          </select>
+        </div>
+        <div class="col-12 text-end">
+          <button type="submit" class="btn btn-primary">Apply Filters</button>
+          {% if search or level or published %}
+            <a href="?" class="btn btn-outline-secondary ms-2">Clear All</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  {% if courses %}
+    <div class="row g-4" id="course-grid">
+      {% for course in courses %}
+        <div class="col-lg-4 col-md-6">
+          <div class="card border-0 shadow-sm h-100 course-card">
+            <!-- Course Image -->
+            <div class="position-relative" style="height: 180px; overflow: hidden;">
+              {% if course.thumbnail %}
+                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" 
+                     style="width: 100%; height: 100%; object-fit: cover;"
+                     loading="lazy"
+                     data-bs-toggle="tooltip"
+                     title="{{ course.title }}">
+              {% else %}
+                {% with theme=forloop.counter0|divisibleby:2|yesno:'programming,mathematics' %}
+                <img src="https://source.unsplash.com/random/600x400/?{{ theme }},education" 
+                     alt="{{ course.title }}" 
+                     style="width: 100%; height: 100%; object-fit: cover;"
+                     loading="lazy"
+                     data-bs-toggle="tooltip"
+                     title="{{ course.title }}">
+                {% endwith %}
+              {% endif %}
+              
+              <!-- Course Level Badge -->
+              <span class="position-absolute top-0 end-0 m-2">
+                {% if course.get_level_display == 'Beginner' %}
+                  <span class="badge bg-success">{{ course.get_level_display }}</span>
+                {% elif course.get_level_display == 'Intermediate' %}
+                  <span class="badge bg-warning">{{ course.get_level_display }}</span>
+                {% else %}
+                  <span class="badge bg-danger">{{ course.get_level_display }}</span>
+                {% endif %}
+              </span>
+            </div>
+            
+            <!-- Course Info -->
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title mb-2">
+                <a href="{% url 'courseplatform:course_detail' course.pk %}" class="text-decoration-none text-dark hover-primary">
+                  {{ course.title|truncatechars:45 }}
+                </a>
+              </h5>
+              
+              <p class="text-muted small mb-3">
+                {% if course.instructor %}
+                  <span class="d-block mb-1">
+                    <i class="bi bi-person"></i> {{ course.instructor }}
+                  </span>
+                {% endif %}
+                {% if course.category %}
+                  <span class="d-block">
+                    <i class="bi bi-tag"></i> {{ course.category }}
+                  </span>
+                {% endif %}
+              </p>
+              
+              <div class="mt-auto d-flex justify-content-between align-items-center">
+                <div>
+                  {% if course.price > 0 %}
+                    <span class="h5 mb-0">${{ course.price|floatformat:2 }}</span>
+                  {% else %}
+                    <span class="badge bg-success">Free</span>
+                  {% endif %}
+                </div>
+                <div class="text-muted small">
+                  {% if course.start_date %}
+                    <i class="bi bi-calendar3"></i> {{ course.start_date|date:"M j, Y" }}
+                  {% else %}
+                    <i class="bi bi-clock"></i> Self-paced
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            
+            <!-- Course Actions -->
+            <div class="card-footer bg-transparent border-top-0 pt-0">
+              <div class="d-grid">
+                <a href="{% url 'courseplatform:course_detail' course.pk %}" class="btn btn-outline-primary">
+                  View Details
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    
+    <!-- Simple Pagination -->
+    {% if is_paginated %}
+    <nav aria-label="Course pagination">
+      <ul class="pagination justify-content-center mt-4">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if level %}&level={{ level }}{% endif %}{% if published %}&published={{ published }}{% endif %}">
+              &laquo; Previous
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">&laquo; Previous</span>
+          </li>
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active">
+              <span class="page-link">{{ num }}</span>
+            </li>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if level %}&level={{ level }}{% endif %}{% if published %}&published={{ published }}{% endif %}">
+                {{ num }}
+              </a>
+            </li>
+          {% endif %}
+        {% endfor %}
+        
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if level %}&level={{ level }}{% endif %}{% if published %}&published={{ published }}{% endif %}">
+              Next &raquo;
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">Next &raquo;</span>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+  {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-5">
+      <i class="bi bi-book text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+      <h4 class="mt-4">No courses found</h4>
+      <p class="text-muted">
+        {% if search or level or published %}
+          Try adjusting your search or filter to find what you're looking for.
+          <a href="?" class="d-block mt-2">Clear all filters</a>
+        {% else %}
+          There are no courses available at the moment. Please check back later.
+        {% endif %}
+      </p>
+      <a href="{% url 'courseplatform:course_create' %}" class="btn btn-primary mt-3">
+        <i class="bi bi-plus-lg me-1"></i> Create New Course
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- AOS Animation -->
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize AOS
+    AOS.init({
+      duration: 800,
+      easing: 'ease-in-out',
+      once: true
+    });
+
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Handle image errors
+    document.querySelectorAll('img').forEach(function(img) {
+      img.addEventListener('error', function() {
+        this.onerror = null; // Prevent infinite loop if default image fails
+        this.src = '{% static "CoursePlatform/images/courses/technology.jpg" %}';
+      });
+    });
+  });
+</script>
+{% endblock %}
