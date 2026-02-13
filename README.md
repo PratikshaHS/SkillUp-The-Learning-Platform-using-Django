@@ -1,6 +1,6 @@
 # SkillUp- The Learning Platform Using Django
 
-A comprehensive Django-based Learning Management System for managing students, courses, and educational content with a modern, user-friendly interface.
+A comprehensive Django-based Learning Management System for managing students, courses, and educational content with a modern, user-friendly interface with secure payment integration using stripe.
 
 ## 🚀 Features
 
